@@ -69,3 +69,5 @@ Thumbs.db
 # Large Archive Dumps
 *.zip
 *.tar.gz
+
+.vercel
