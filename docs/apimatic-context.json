@@ -1,0 +1,20 @@
+{
+  "$schema": "https://apimatic.io/schemas/context-plugin.json",
+  "name": "AION PayPal Agentic Commerce API",
+  "version": "1.0.0",
+  "specPath": "./docs/openapi.json",
+  "description": "Production-grade PayPal integration with UNWIND cryptographic warrant clearance, Orders v2, and Payouts v1 for the PayPal AI Hackathon 2026.",
+  "targetLanguage": "typescript",
+  "plugins": [
+    {
+      "name": "apimatic-paypal-context",
+      "version": "1.0.0",
+      "enabled": true
+    }
+  ],
+  "errorHandling": {
+    "retries": 3,
+    "backoff": "exponential",
+    "circuitBreaker": true
+  }
+}

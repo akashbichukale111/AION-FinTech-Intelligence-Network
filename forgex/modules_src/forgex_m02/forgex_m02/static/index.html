@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FORGEX · Engineering Planner</title>
+<style>
+:root{--bg:#0b0e14;--panel:#121722;--line:#1f2736;--tx:#e6eaf2;--mut:#8a94a8;--ac:#6ea8ff;--ok:#3ecf8e;--warn:#f5b942;--bad:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 Inter,system-ui,sans-serif}
+header{display:flex;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);background:#0d121b;position:sticky;top:0;z-index:5}
+h1{font-size:16px;margin:0;letter-spacing:.08em}h1 b{color:var(--ac)}h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:0 0 10px}
+main{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px 22px}@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+input,select,textarea,button{font:inherit;color:var(--tx);background:#0b101a;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+input,select,textarea{width:100%;margin-bottom:8px}textarea{min-height:70px;resize:vertical}
+button{cursor:pointer;background:#16304f;border-color:#244a77}button:hover{filter:brightness(1.2)}button.ok{background:#12352a;border-color:#1d6b50}button.bad{background:#3a1717;border-color:#7a2a2a}button:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;border:1px solid var(--line);color:var(--mut)}
+.low,.done{color:var(--ok)}.medium,.in_progress{color:var(--warn)}.high,.critical,.blocked{color:var(--bad)}
+.task{padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer}.task:hover,.task.sel{border-color:var(--ac)}
+.mut{color:var(--mut)}.err{color:var(--bad);margin:6px 0}code{background:#0b101a;padding:1px 5px;border-radius:5px;font-size:12px}
+.bar{height:6px;background:#0b101a;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.ev{font-size:11px;color:var(--ac);cursor:help;margin-right:4px}.warn{border-left:3px solid var(--warn);padding:6px 10px;background:#1c1a10;border-radius:6px;margin:4px 0}
+.step{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px}ul{margin:4px 0;padding-left:18px}svg text{fill:var(--tx);font-size:11px}
+</style></head><body>
+<header><h1>FORGEX · <b>ENGINEERING PLANNER</b></h1><span class="tag">Module 02</span><span style="flex:1"></span>
+<label class="mut">Actor</label><input id="actor" style="width:150px;margin:0" placeholder="your name"></header>
+<main><div>
+ <div class="card"><h2>Task intake</h2>
+  <select id="repo"></select><input id="title" placeholder="Title (min 5 chars)">
+  <textarea id="desc" placeholder="Describe the issue (min 20 chars). Mention file paths, symbols, errors for better context."></textarea>
+  <div class="row"><select id="type" style="flex:1"></select><select id="prio" style="flex:1"></select></div>
+  <textarea id="logs" placeholder="Logs / stack trace (optional)"></textarea>
+  <button id="create">Submit task</button><div id="cerr" class="err"></div></div>
+ <div class="card"><h2>Tasks</h2><div id="tasks" class="mut">Loading…</div></div>
+</div><div id="detail"><div class="card mut">Select or create a task.</div></div></main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TYPES=['bug','feature','refactor','security','performance','tech_debt','fintech_reliability'],PR=['low','medium','high','critical'];
+$('#type').innerHTML=TYPES.map(t=>`<option>${t}</option>`).join('');$('#prio').innerHTML=PR.map(t=>`<option ${t=='medium'?'selected':''}>${t}</option>`).join('');
+$('#actor').value=localStorage.getItem('actor')||'';$('#actor').onchange=e=>{localStorage.setItem('actor',e.target.value);boot()};
+let sel=null;
+async function api(m,p,b){const r=await fetch('/api/v1/engineering'+p,{method:m,headers:{'Content-Type':'application/json','X-Actor':$('#actor').value.trim()},body:b?JSON.stringify(b):undefined});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error?.message||JSON.stringify(j.detail||j)||r.statusText);return j}
+const ev=ids=>(ids||[]).map(i=>`<span class="ev" title="Module 01 evidence ${esc(i)}">[${esc(i)}]</span>`).join('');
+async function boot(){try{const r=await api('GET','/repositories');$('#repo').innerHTML=r.items.length?r.items.map(i=>`<option>${esc(i.repo_id)}</option>`).join(''):'<option value="">No Module 01 repositories</option>'}catch(e){$('#repo').innerHTML='<option value="">'+esc(e.message)+'</option>'}loadTasks()}
+async function loadTasks(){try{const r=await api('GET','/tasks');$('#tasks').innerHTML=r.items.map(t=>`<div class="task ${sel==t.id?'sel':''}" onclick="open_('${t.id}')"><b>${esc(t.title)}</b><div class="mut">${esc(t.repo_id)} · <span class="tag">${esc(t.type)}</span> <span class="tag ${esc(t.status)}">${esc(t.status)}</span></div></div>`).join('')||'No tasks yet.'}catch(e){$('#tasks').innerHTML='<span class="err">'+esc(e.message)+'</span>'}}
+$('#create').onclick=async()=>{$('#cerr').textContent='';try{const t=await api('POST','/tasks',{repo_id:$('#repo').value,title:$('#title').value,description:$('#desc').value,type:$('#type').value,priority:$('#prio').value,logs:$('#logs').value||null});['title','desc','logs'].forEach(i=>$('#'+i).value='');await open_(t.id)}catch(e){$('#cerr').textContent=e.message}};
+async function open_(id){sel=id;loadTasks();const t=await api('GET','/tasks/'+id);let plan=null;if(t.plans.length){const live=t.plans.find(p=>['draft','approved','in_progress','completed'].includes(p.status))||t.plans[0];plan=await api('GET','/plans/'+live.id)}render(t,plan)}
+function graph(g){if(!g||!g.changed.length)return'<div class="mut">No impact graph (no matched files).</div>';
+ const cols={d:g.dependents,c:g.changed,a:g.apis.map(a=>a.label)},H=Math.max(cols.d.length,cols.c.length,cols.a.length)*30+30,pos={};
+ cols.d.forEach((p,i)=>pos[p]=[10,24+i*30]);cols.c.forEach((p,i)=>pos[p]=[300,24+i*30]);const apos={};cols.a.forEach((p,i)=>apos[p]=[590,24+i*30]);
+ const sh=s=>esc(s.length>34?'…'+s.slice(-33):s);let o=`<svg viewBox="0 0 800 ${H}" width="100%" style="max-height:420px"><text x="10" y="12" class="mut">Dependents</text><text x="300" y="12">Files to change</text><text x="590" y="12">APIs</text>`;
+ g.edges.forEach(([a,b])=>{if(pos[a]&&pos[b])o+=`<line x1="${pos[a][0]+190}" y1="${pos[a][1]-4}" x2="${pos[b][0]}" y2="${pos[b][1]-4}" stroke="#3a5a8a"/>`});
+ g.apis.forEach(a=>{if(pos[a.file])o+=`<line x1="${pos[a.file][0]+190}" y1="${pos[a.file][1]-4}" x2="590" y2="${apos[a.label][1]-4}" stroke="#3ecf8e"/>`});
+ cols.d.forEach(p=>o+=`<rect x="10" y="${pos[p][1]-16}" width="190" height="22" rx="5" fill="#16202f" stroke="#2a3a52"/><text x="16" y="${pos[p][1]-1}">${sh(p)}</text>`);
+ cols.c.forEach(p=>o+=`<rect x="300" y="${pos[p][1]-16}" width="190" height="22" rx="5" fill="#1a2f4d" stroke="#6ea8ff"/><text x="306" y="${pos[p][1]-1}">${sh(p)}</text>`);
+ cols.a.forEach(p=>o+=`<rect x="590" y="${apos[p][1]-16}" width="200" height="22" rx="5" fill="#12352a" stroke="#1d6b50"/><text x="596" y="${apos[p][1]-1}">${sh(p)}</text>`);return o+'</svg>'}
+function render(t,pl){const a=t.analysis;let h=`<div class="card"><div class="row"><h2 style="margin:0;flex:1">${esc(t.title)}</h2><span class="tag">${esc(t.type)}</span><span class="tag ${esc(t.priority)}">${esc(t.priority)}</span><span class="tag ${esc(t.status)}">${esc(t.status)}</span></div>
+ <p>${esc(t.description)}</p><div class="mut">Repository <code>${esc(t.repo_id)}</code> · by ${esc(t.created_by)}</div><div class="row" style="margin-top:10px"><button onclick="act('POST','/tasks/${t.id}/analyze')">${a?'Re-analyze':'Analyze using Module 01 context'}</button>
+ ${a&&!pl?`<button onclick="act('POST','/tasks/${t.id}/plans',{})">Generate plan</button>`:''}${pl&&['rejected','superseded'].includes(pl.status)?`<button onclick="act('POST','/tasks/${t.id}/plans',{supersede:false})">Generate new plan</button>`:''}${pl&&pl.status=='draft'?`<button onclick="act('POST','/tasks/${t.id}/plans',{supersede:true})">Regenerate (supersede)</button>`:''}</div><div id="err" class="err"></div></div>`;
+ if(a){const s=a.scan;h+=`<div class="card"><h2>Classification &amp; repository context</h2><div>${a.classification.domain_templates.map(x=>`<span class="tag">${esc(x.name)} (${esc(x.matched_keywords.join(', '))})</span>`).join(' ')||'<span class="mut">No FinTech template matched</span>'}</div>
+ <div class="mut" style="margin:6px 0">Scan <code>${esc(s.scan_id)}</code> · ${esc(s.scanned_at||'unknown time')} · age ${esc(s.age_days??'?')}d · evidence from Module 01</div>${a.missing_context.map(m=>`<div class="warn">Missing context: ${esc(m)}</div>`).join('')}
+ <h2 style="margin-top:12px">Facts (from Module 01 data)</h2><ul>${a.facts.map(f=>`<li>${esc(f.statement)} ${ev([f.evidence_id])}</li>`).join('')||'<li class="mut">None</li>'}</ul></div>
+ <div class="card"><h2>Root-cause hypotheses — unverified</h2>${a.hypotheses.map(x=>`<div class="step"><b>${esc(x.title)}</b> <span class="tag ${x.confidence_label=='high'?'low':x.confidence_label=='low'?'high':'medium'}">${esc(x.confidence_label)} confidence ${x.confidence?(x.confidence*100).toFixed(0)+'%':''}</span> <span class="tag">${esc(x.status)}</span>
+ <div class="bar" style="margin:6px 0"><i style="width:${(x.confidence||0)*100}%"></i></div><div>${esc(x.explanation)}</div><div class="mut">Evidence ${ev(x.evidence_ids)}${(x.confidence_basis||[]).map(b=>`<div>+${esc(b.points)} ${esc(b.factor)}</div>`).join('')}</div>
+ <b>Investigate</b><ul>${(x.investigation||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul><b>Alternatives</b><ul>${(x.alternatives||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')||'<div class="mut">No hypotheses for this task type/context.</div>'}</div>
+ <div class="card"><h2>Impact analysis</h2>${graph(a.impact.graph)}<div class="row" style="align-items:flex-start;margin-top:8px"><div style="flex:1;min-width:240px"><b>Files likely to change</b><ul>${a.impact.files_to_change.map(f=>`<li><code>${esc(f.path)}</code> ${ev([f.evidence_id])}</li>`).join('')||'<li class="mut">none</li>'}</ul><b>Database / schema</b><div>${esc(a.impact.database_schema.implication)}</div></div>
+ <div style="flex:1;min-width:240px"><b>Security</b><ul>${a.impact.security.considerations.map(i=>`<li>${esc(i)}</li>`).join('')||'<li class="mut">none identified</li>'}</ul><b>Tests</b><ul>${a.impact.tests.existing.map(i=>`<li>existing: <code>${esc(i)}</code></li>`).join('')}${a.impact.tests.required.map(i=>`<li>required: ${esc(i)}</li>`).join('')}</ul>${a.impact.tests.coverage_gap?`<div class="warn">${esc(a.impact.tests.coverage_gap)}</div>`:''}</div></div>
+ <b>Regression risks</b><ul>${a.impact.regression_risks.map(i=>`<li>${esc(i)}</li>`).join('')||'<li class="mut">none identified</li>'}</ul></div>`}
+ const rk=pl?pl.risk:a?.risk;if(rk)h+=`<div class="card"><h2>Risk assessment (deterministic · ${esc(rk.rules_version)})</h2><div style="font-size:22px" class="${esc(rk.level)}"><b>${esc(rk.total)}</b>/100 · ${esc(rk.level)}</div><div class="mut">${esc(rk.method)}</div>
+ ${rk.factors.map(f=>`<div style="margin-top:8px"><div class="row"><span style="width:150px">${esc(f.name)} <span class="mut">w${f.weight}</span></span><div class="bar" style="flex:1"><i style="width:${f.score}%;background:${f.score>=70?'var(--bad)':f.score>=40?'var(--warn)':'var(--ok)'}"></i></div><b>${f.score}</b></div><div class="mut">${esc(f.explanation)} ${ev(f.evidence_ids)}</div></div>`).join('')}</div>`;
+ if(pl){const c=pl.content;h+=`<div class="card"><div class="row"><h2 style="margin:0;flex:1">${esc(pl.title)}</h2><span class="tag ${esc(pl.status)}">${esc(pl.status)}</span></div><div class="mut">Scan ${esc(pl.scan_id)} · ${c.governance?esc(c.governance):''}</div>
+ <p><b>Recommendation</b> (not a fact): ${esc(c.recommendations.proposed_solution)}</p>${pl.status=='draft'?`<div class="row"><input id="note" placeholder="Decision note (required for rejection / high-risk approval)" style="flex:1;margin:0"><button class="ok" onclick="decide('approve','${pl.id}')">Approve</button><button class="bad" onclick="decide('reject','${pl.id}')">Reject</button></div>`:''}
+ ${pl.decided_by?`<div class="mut">Decision by ${esc(pl.decided_by)}: ${esc(pl.decision_note||'')}</div>`:''}<h2 style="margin-top:14px">Steps &amp; execution status</h2>
+ ${pl.steps.map(s=>`<div class="step"><div class="row"><b>${esc(s.code)}. ${esc(s.title)}</b><span class="tag ${esc(s.status)}">${esc(s.status)}</span><span class="tag">${esc(s.kind)}</span><span class="mut">after: ${esc(s.depends_on.join(', ')||'—')}</span></div><div class="mut">${esc(s.description)}</div>${s.files.length?`<div>${s.files.map(f=>`<code>${esc(f)}</code>`).join(' ')}</div>`:''}
+ ${['approved','in_progress'].includes(pl.status)?`<div class="row" style="margin-top:6px">${({pending:['in_progress','skipped'],in_progress:['done','blocked'],blocked:['in_progress','skipped']}[s.status]||[]).map(n=>`<button onclick="step('${pl.id}','${s.id}','${n}')">${n}</button>`).join('')}</div>`:''}</div>`).join('')}
+ <div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px"><b>Rollback</b><ul>${c.rollback_strategy.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div><div style="flex:1;min-width:240px"><b>Acceptance criteria</b><ul>${c.acceptance_criteria.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div></div></div>
+ <div class="card"><h2>Plan history</h2>${pl.history.map(x=>`<div><span class="mut">${esc(x.at)}</span> <b>${esc(x.event)}</b> by ${esc(x.actor)} ${esc(x.note||'')}</div>`).join('')}</div>`}
+ $('#detail').innerHTML=h}
+const fail=e=>{const x=$('#err');if(x)x.textContent=e.message;else alert(e.message)};
+async function act(m,p,b){try{const r=await api(m,p,b);await open_(sel)}catch(e){fail(e)}}
+async function decide(w,id){try{await api('POST',`/plans/${id}/${w}`,{note:$('#note').value||null});await open_(sel)}catch(e){fail(e)}}
+async function step(p,s,st){try{await api('PATCH',`/plans/${p}/steps/${s}`,{status:st});await open_(sel)}catch(e){fail(e)}}
+boot();
+</script></body></html>

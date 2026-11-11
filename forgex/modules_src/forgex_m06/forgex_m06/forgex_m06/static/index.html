@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinTech Transaction Reliability Lab</title>
+<style>
+:root{--bg:#0a0e16;--panel:#111826;--panel2:#171f31;--line:#242f47;--text:#e7ecf6;--mute:#8693ab;--accent:#5eead4;--accent2:#38bdf8;
+--crit:#f87171;--high:#fb923c;--med:#fbbf24;--low:#60a5fa;--ok:#4ade80;--r:12px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--sans)}
+a{color:var(--accent2);text-decoration:none}button{font:inherit;cursor:pointer}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+nav{background:#0c121d;border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 18px}.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#06231f;font-weight:800}
+.brand b{display:block;font-size:13px;letter-spacing:.3px}.brand span{font-size:11px;color:var(--mute)}
+nav h6{margin:16px 10px 6px;font-size:10.5px;letter-spacing:1.4px;color:var(--mute);text-transform:uppercase}
+nav a{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;color:#c4cde0}nav a:hover{background:#141c2c}nav a.on{background:#17233a;color:#fff;box-shadow:inset 2px 0 var(--accent)}
+.banner{background:linear-gradient(90deg,#1c2a1f,#162a2a);border-bottom:1px solid #2a4b43;color:#a7f3d0;padding:8px 22px;font-size:12px;display:flex;gap:10px;align-items:center}
+.banner i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+main{padding:0 0 60px;min-width:0}.wrap{padding:22px 26px;max-width:1280px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 10px}h3{font-size:13px;margin:0 0 8px;color:#cbd5e8}.sub{color:var(--mute);margin:0 0 18px}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1000px){.app{grid-template-columns:1fr}nav{position:static;height:auto}.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.kpi b{font-size:26px;display:block;font-variant-numeric:tabular-nums}.kpi span{color:var(--mute);font-size:12px}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid}
+.critical{color:var(--crit);border-color:#7f2f2f;background:#2a1517}.high{color:var(--high);border-color:#7a4520;background:#2a1b10}.medium{color:var(--med);border-color:#6f5a16;background:#2a2410}.low{color:var(--low);border-color:#274e7d;background:#10203a}
+.pass{color:var(--ok);border-color:#235c37;background:#10261a}.fail{color:var(--crit);border-color:#7f2f2f;background:#2a1517}.neutral{color:var(--mute);border-color:var(--line);background:#121a29}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--mute);font-weight:600}
+tr.click:hover{background:#141c2c;cursor:pointer}td.m,.mono{font-family:var(--mono);font-size:12px}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 13px;border-radius:9px}.btn:hover{border-color:#3a4a6c}
+.btn.pri{background:var(--accent);color:#04201c;border-color:var(--accent);font-weight:700}.btn.pri:hover{filter:brightness(1.08)}.btn.sm{padding:3px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:wait}
+input,select,textarea{background:#0c1320;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 9px;font:inherit;width:100%}textarea{font-family:var(--mono);font-size:12px;min-height:90px}
+label{display:block;font-size:11.5px;color:var(--mute);margin-bottom:3px}.f{margin-bottom:10px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:0 0 auto}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 12px}.chk{display:flex;align-items:center;gap:8px;padding-top:18px}.chk input{width:auto}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 16px;flex-wrap:wrap}.tabs a{padding:8px 14px;color:var(--mute);border-bottom:2px solid transparent;cursor:pointer}.tabs a.on{color:#fff;border-color:var(--accent)}
+pre{background:#0a111d;border:1px solid var(--line);border-radius:9px;padding:10px;overflow:auto;font:12px/1.5 var(--mono);margin:6px 0;max-height:340px}
+.bar{height:8px;border-radius:5px;background:#1a2438;overflow:hidden}.bar i{display:block;height:100%}
+.finding{border-left:3px solid var(--line)}.finding.critical{border-left-color:var(--crit)}.finding.high{border-left-color:var(--high)}.finding.medium{border-left-color:var(--med)}.finding.low{border-left-color:var(--low)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:4px 12px;margin:6px 0}.kv>b{color:var(--mute);font-weight:500;font-size:12px}
+.life{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:6px 0}.node{padding:5px 11px;border:1px solid var(--line);border-radius:8px;font-size:12px;background:#0f1726;color:var(--mute)}.node.on{color:#06231f;background:var(--accent);border-color:var(--accent);font-weight:700}.node.bad{color:#fff;background:#7f2f2f;border-color:#c24a4a}.arrow{width:22px;height:2px;background:var(--line)}.arrow.on{background:var(--accent)}
+.lanes{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#0a111d}.lane{display:grid;align-items:stretch}.lane>div{padding:3px 8px;border-bottom:1px solid #18223a;font:11px var(--mono);min-height:24px;white-space:nowrap}.lane .h{position:sticky;top:0;background:#101a2c;color:var(--mute);font-weight:700}
+.ev{display:inline-block;padding:1px 6px;border-radius:5px;background:#16243b;border:1px solid #2a4066}.ev.x{background:#3a1b1d;border-color:#7f2f2f;color:#fecaca}.ev.g{background:#12301f;border-color:#235c37;color:#bbf7d0}
+.note{color:var(--mute);font-size:12px}.tag{font:11px var(--mono);color:var(--accent2)}.hl{background:#2a2410!important}
+.toast{position:fixed;right:18px;bottom:18px;background:#2a1517;border:1px solid #7f2f2f;color:#fecaca;padding:10px 14px;border-radius:10px;max-width:420px;z-index:9}
+.toast.ok{background:#10261a;border-color:#235c37;color:#bbf7d0}.empty{color:var(--mute);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:var(--r)}
+.score{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums}details>summary{cursor:pointer;color:var(--accent2);margin:6px 0}.sp{flex:1}.wide{grid-column:1/-1}
+svg text{fill:var(--mute);font:10px var(--mono)}
+</style>
+</head>
+<body>
+<div class="app">
+<nav>
+  <div class="brand"><div class="logo">F</div><div><b>FORGEX · Module 06</b><span>Transaction Reliability Lab</span></div></div>
+  <h6>Workspace</h6>
+  <a href="#/overview" data-r="overview">Simulation overview</a>
+  <a href="#/library" data-r="library">Scenario library</a>
+  <a href="#/console" data-r="console">Configure &amp; run</a>
+  <a href="#/runs" data-r="runs">Runs &amp; compare</a>
+  <h6>Analysis labs</h6>
+  <a href="#/idempotency" data-r="idempotency">Idempotency</a>
+  <a href="#/ledger" data-r="ledger">Ledger integrity</a>
+  <a href="#/concurrency" data-r="concurrency">Concurrency</a>
+  <a href="#/retry" data-r="retry">Retry &amp; recovery</a>
+  <a href="#/settlement" data-r="settlement">Settlement</a>
+  <h6>Engineering</h6>
+  <a href="#/findings" data-r="findings">Findings</a>
+  <a href="#/tasks" data-r="tasks">Engineering tasks</a>
+  <a href="#/repo" data-r="repo">Repository intel</a>
+</nav>
+<main>
+  <div class="banner"><i></i><span><b>SYNTHETIC SIMULATION DATA</b> — no live payments, no real accounts. Findings are simulated results, not confirmed incidents or financial loss.</span></div>
+  <div class="wrap" id="view"></div>
+</main>
+</div>
+<script>
+const API='/api/v1/fintech-lab';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const j=o=>esc(typeof o==='string'?o:JSON.stringify(o));
+const sev=s=>`<span class="pill ${esc(s)}">${esc(s)}</span>`;
+let META=null, CACHE={};
+function toast(m,ok){const t=document.createElement('div');t.className='toast'+(ok?' ok':'');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),ok?2500:6000)}
+async function api(path,opt={}){
+  const r=await fetch(API+path,{headers:{'Content-Type':'application/json'},...opt,body:opt.body?JSON.stringify(opt.body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){const m=typeof d.detail==='string'?d.detail:JSON.stringify(d.detail||d);toast(m);throw new Error(m)}
+  return d;
+}
+const post=(p,b)=>api(p,{method:'POST',body:b||{}});
+async function busy(btn,fn){if(btn)btn.disabled=true;try{return await fn()}finally{if(btn)btn.disabled=false}}
+
+/* ------------------------------------------------------------------ shared renderers */
+function findingCard(f,opts={}){
+  const refs=(f.affected_code_refs||[]).map(r=>`<span class="tag">${esc(r.source==='repository'?'repo':'sim')}:${esc(r.path)}:${r.line} <span class="note">${esc(r.symbol)}</span></span>`).join('<br>')||'<span class="note">no code references</span>';
+  const ev=(f.evidence||[]).slice(0,3).map(e=>`<pre>${esc(JSON.stringify(e,null,1))}</pre>`).join('');
+  return `<div class="card finding ${esc(f.severity)}" id="f-${esc(f.finding_id)}">
+  <div class="row"><b>${esc(f.title)}</b>${sev(f.severity)}<span class="pill neutral">confidence ${esc(f.confidence)}</span><span class="pill neutral">SIMULATED</span><span class="sp"></span>
+   <span class="tag">${esc(f.finding_id)}</span>${opts.noTask?'':`<button class="btn sm" data-task="${esc(f.finding_id)}">Create engineering task</button>`}</div>
+  <div class="kv"><b>Failure type</b><span class="mono">${esc(f.failure_type)}</span><b>Scenario</b><span class="mono">${esc(f.scenario_id)}</span>
+  <b>Expected</b><span>${esc(f.expected_result)}</span><b>Actual (simulated)</b><span>${esc(f.actual_result)}</span>
+  <b>Root-cause hypothesis</b><span>${esc(f.root_cause_hypothesis)}</span><b>Recommended fix</b><span>${esc(f.recommended_fix)}</span>
+  <b>Code references</b><span>${refs}</span><b>Confidence basis</b><span class="note">${esc(f.confidence_basis)}</span>
+  <b>Trace evidence</b><span class="mono">${(f.trace_seq||[]).slice(0,40).join(', ')||'—'}</span></div>
+  <details><summary>Reproduction steps (${(f.reproduction_steps||[]).length})</summary><ol>${(f.reproduction_steps||[]).map(s=>`<li class="mono">${esc(s)}</li>`).join('')}</ol></details>
+  <details><summary>Evidence payload</summary>${ev||'<span class="note">none</span>'}<div class="note">Evidence registry: ${(f.evidence_refs||[]).map(esc).join(', ')}</div></details></div>`;
+}
+function bindTasks(root){$$('[data-task]',root).forEach(b=>b.onclick=()=>busy(b,async()=>{const t=await post(`/findings/${b.dataset.task}/tasks`);toast('Task '+t.task_id+' created ('+t.priority+')',true);location.hash='#/tasks'}))}
+function expTable(exps){return `<table><tr><th>Invariant</th><th>Expected</th><th>Actual (simulated)</th><th></th></tr>${exps.map(e=>`<tr><td>${esc(e.description)}</td><td class="m">${esc(e.expected)}</td><td class="m">${esc(e.actual)}</td><td><span class="pill ${e.ok?'pass':'fail'}">${e.ok?'pass':'fail'}</span></td></tr>`).join('')}</table>`}
+function sevBars(by){const t=Object.values(by||{}).reduce((a,b)=>a+b,0)||1;return ['critical','high','medium','low'].map(s=>`<div class="row" style="margin:4px 0"><span style="width:62px">${sev(s)}</span><div class="bar sp"><i style="width:${(by[s]||0)/t*100}%;background:var(--${s==='critical'?'crit':s==='medium'?'med':s})"></i></div><b class="mono" style="width:28px;text-align:right">${by[s]||0}</b></div>`).join('')}
+function lifecycle(run){
+  const ev=run.result.trace||[], pays=run.result.payments||{};const ids=Object.keys(pays);
+  if(!ids.length)return `<div class="empty">No payment lifecycle in this scenario type (${esc(run.type)}). See the trace / lanes tabs for the execution.</div>`;
+  const order=[['authorized','Authorized'],['captured','Captured'],['webhook_applied','Settled'],['refunded','Refunded'],['reversed','Reversed'],['voided','Voided'],['declined','Declined'],['crash','Crash']];
+  return ids.map(id=>{
+    const mine=ev.filter(e=>e.payment_id===id||(e.op==='webhook_applied'&&e.payment_id===id));const cnt={};mine.forEach(e=>cnt[e.op]=(cnt[e.op]||0)+1);
+    const p=pays[id];
+    const nodes=[['request','Initiated']].concat(order).map(([op,l],i)=>{const n=op==='request'?1:(cnt[op]||0);const bad=n>1||op==='crash'&&n||(op==='voided'&&cnt.captured);return `${i?`<span class="arrow ${n?'on':''}"></span>`:''}<span class="node ${bad?'bad':n?'on':''}">${l}${n>1?` ×${n}`:''}</span>`}).join('');
+    return `<div class="card" style="margin-bottom:12px"><div class="row"><b class="mono">${esc(id)}</b><span class="pill neutral">final: ${esc(p.state)}</span><span class="note">amount ${esc(p.amount)} · captured ${esc(p.captured)} · refunded ${esc(p.refunded)} · settled ${esc(p.settled)} · key ${esc(p.key)}</span><span class="pill neutral">synthetic</span></div><div class="life">${nodes}</div></div>`}).join('');
+}
+function lanes(events,hl=[]){
+  if(!events.length)return '<div class="empty">No trace events.</div>';
+  const actors=[...new Set(events.map(e=>e.actor))];const cols=`56px ${actors.map(()=>'minmax(150px,1fr)').join(' ')}`;
+  const bad=new Set(['crash','response_lost','deadlock_detected','lock_wait','version_conflict','idem_stuck','actor_error','declined_insufficient','idem_record_expired']);
+  return `<div class="lanes"><div class="lane" style="grid-template-columns:${cols}"><div class="h">seq</div>${actors.map(a=>`<div class="h">${esc(a)}</div>`).join('')}
+  ${events.map(e=>`<div class="${hl.includes(e.seq)?'hl':''}">${e.seq}</div>${actors.map(a=>`<div class="${hl.includes(e.seq)?'hl':''}">${a===e.actor?`<span class="ev ${bad.has(e.op)?'x':/captured|refunded|applied|write_balance|transfer|stored/.test(e.op)?'g':''}" title="${esc(JSON.stringify(e))}">${esc(e.op)}</span>`:''}</div>`).join('')}`).join('')}</div></div>`;
+}
+function traceTable(events,hl=[]){return `<div style="max-height:520px;overflow:auto"><table><tr><th>#</th><th>Actor</th><th>Operation</th><th>Details</th></tr>${events.map(e=>{const {seq,actor,op,...d}=e;return `<tr class="${hl.includes(seq)?'hl':''}"><td class="m">${seq}</td><td class="m">${esc(actor)}</td><td><span class="ev">${esc(op)}</span></td><td class="m">${j(d)}</td></tr>`}).join('')}</table></div>`}
+function ledgerView(run){
+  const v=run.result.ledger_validation, js=run.result.journals||[];
+  return `<div class="row"><span class="pill ${v.valid?'pass':'fail'}">${v.valid?'all invariants hold':'invariant violations'}</span><span class="note">${v.journal_count} journals · Decimal arithmetic · synthetic</span></div>
+  ${checks(v)}
+  <h3 style="margin-top:14px">Account balances (Decimal)</h3><table><tr><th>Account</th><th>Net (debit − credit)</th></tr>${Object.entries(v.account_balances).map(([a,b])=>`<tr><td class="m">${esc(a)}</td><td class="m">${esc(b)}</td></tr>`).join('')||'<tr><td colspan=2 class="note">no journals</td></tr>'}</table>
+  <h3 style="margin-top:14px">Journals</h3><div style="max-height:360px;overflow:auto"><table><tr><th>ID</th><th>Txn</th><th>Kind</th><th>Lines</th></tr>${js.map(x=>`<tr><td class="m">${esc(x.journal_id)}</td><td class="m">${esc(x.txn_id)}</td><td>${esc(x.kind)}${x.reverses?` ↩ ${esc(x.reverses)}`:''}</td><td class="m">${x.lines.map(l=>`${esc(l.account)} ${l.debit!=='0.00'&&l.debit!=='0'?'Dr '+esc(l.debit):'Cr '+esc(l.credit)}`).join('<br>')}</td></tr>`).join('')}</table></div>`;
+}
+function checks(v){return `<table><tr><th>Invariant</th><th></th><th>Violations</th></tr>${v.checks.map(c=>`<tr><td>${esc(c.invariant.replace(/_/g,' '))}</td><td><span class="pill ${c.passed?'pass':'fail'}">${c.passed?'pass':'fail'}</span></td><td class="m">${c.violations.slice(0,4).map(esc).join('<br>')}${c.violations.length>4?`<br>… +${c.violations.length-4}`:''}</td></tr>`).join('')}</table>`}
+function chart(series,labels){
+  const w=640,h=170,pad=30;const all=series.flatMap(s=>s.data);if(!all.length)return '';const mx=Math.max(...all,1);const n=Math.max(...series.map(s=>s.data.length));
+  const pts=d=>d.map((v,i)=>`${pad+i*(w-pad-6)/Math.max(n-1,1)},${h-pad-(v/mx)*(h-pad-8)}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="background:#0a111d;border:1px solid var(--line);border-radius:10px"><line x1="${pad}" y1="${h-pad}" x2="${w-6}" y2="${h-pad}" stroke="#243049"/><line x1="${pad}" y1="8" x2="${pad}" y2="${h-pad}" stroke="#243049"/>
+  <text x="2" y="14">${mx}</text><text x="${pad}" y="${h-8}">tick 0</text><text x="${w-60}" y="${h-8}">tick ${n-1}</text>
+  ${series.map(s=>`<polyline fill="none" stroke="${s.color}" stroke-width="2" points="${pts(s.data)}"/>`).join('')}
+  ${series.map((s,i)=>`<text x="${pad+8+i*150}" y="20" style="fill:${s.color}">■ ${s.name}</text>`).join('')}</svg>`;
+}
+function flagFields(impl,prefix='fl'){
+  const E={idempotency:['none','key','key_payload'],in_progress_policy:['resume','reject'],rounding:['allocate','round_each','none'],locking:['none','lock','optimistic']};
+  return Object.entries(impl).map(([k,v])=>E[k]?`<div><label>${k}</label><select data-${prefix}="${k}">${E[k].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`
+   :k==='ttl'?`<div><label>ttl (ticks, blank = never)</label><input data-${prefix}="ttl" type="number" min="0" value="${v??''}"></div>`
+   :`<label class="chk"><input type="checkbox" data-${prefix}="${k}" ${v?'checked':''}>${k}</label>`).join('');
+}
+function readFlags(root,prefix='fl'){const o={};$$(`[data-${prefix}]`,root).forEach(e=>{const k=e.dataset[prefix];o[k]=e.type==='checkbox'?e.checked:k==='ttl'?(e.value===''?null:+e.value):e.value});return o}
+function paramFields(schema,vals={},prefix='pm'){return Object.entries(schema).map(([k,s])=>{const v=vals[k]??s.default;
+  if(s.kind==='bool')return `<label class="chk"><input type="checkbox" data-${prefix}="${k}" ${v?'checked':''}>${k}</label>`;
+  if(s.kind==='enum')return `<div><label>${k}</label><select data-${prefix}="${k}">${s.range[0].map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  return `<div><label>${k}${s.kind==='int'?` (${s.range[0]}–${s.range[1]})`:''}</label><input data-${prefix}="${k}" ${s.kind==='int'?`type="number" min="${s.range[0]}" max="${s.range[1]}"`:''} value="${esc(v)}"></div>`}).join('')}
+function readParams(root,schema,prefix='pm'){const o={};$$(`[data-${prefix}]`,root).forEach(e=>{const k=e.dataset[prefix],s=schema[k];if(!s)return;o[k]=e.type==='checkbox'?e.checked:s.kind==='int'?+e.value:e.value});return o}
+function effectiveImpl(type,profile){const sp=META.scenario_types.find(s=>s.type===type);const H=META.hardened_profile;
+  return profile==='naive'?{...META.naive_profile}:profile==='hardened'||profile==='custom'?{...H}:{...H,...(sp?.defect_profile||{})}}
+
+/* ------------------------------------------------------------------ run detail */
+async function renderRunDetail(box,runId,tab='overview'){
+  const run=await api(`/runs/${runId}?full=true`);const r=run.result,s=run.summary;
+  const tabs=['overview','lifecycle','findings','trace','ledger','evidence','report'];
+  box.innerHTML=`<div class="row" style="margin-bottom:10px"><h1 style="margin:0">${esc(run.name)}</h1><span class="pill ${s.verdict==='CLEAN'?'pass':'fail'}">${esc(s.verdict.replace('_',' '))}</span><span class="tag">${esc(run.run_id)}</span><span class="pill neutral">seed ${run.seed}</span><span class="pill neutral">synthetic</span><span class="sp"></span><button class="btn sm" id="replay">Replay &amp; verify determinism</button></div>
+  <div class="note" style="margin-bottom:12px">scenario <span class="mono">${esc(run.scenario_id)}</span> · type <span class="mono">${esc(run.type)}</span> · digest <span class="mono">${esc(run.digest.slice(0,24))}…</span> · ${esc(run.created_at)}</div>
+  <div class="tabs">${tabs.map(t=>`<a data-t="${t}" class="${t===tab?'on':''}">${t[0].toUpperCase()+t.slice(1)}${t==='findings'?` (${run.findings.length})`:''}</a>`).join('')}</div><div id="tab"></div>`;
+  $('#replay',box).onclick=e=>busy(e.target,async()=>{const d=await post(`/runs/${runId}/replay`);toast(d.reproduced?'Reproduced: identical digest ✔':'DIGEST MISMATCH — run is not deterministic',d.reproduced)});
+  const T=$('#tab',box);
+  const views={
+   overview:()=>`<div class="grid g2"><div class="card"><h2>Expectations</h2>${expTable(r.expectations)}</div><div class="card"><h2>Scenario steps</h2><ol>${r.steps.map(x=>`<li class="mono">${esc(x)}</li>`).join('')}</ol><h3>Implementation under test</h3><pre>${esc(JSON.stringify(r.implementation,null,1))}</pre></div></div>
+   ${Object.keys(r.observations||{}).length?`<div class="card" style="margin-top:14px"><h2>Observations</h2><pre>${esc(JSON.stringify(r.observations,null,1))}</pre>${r.charts?.load_series?chart([{name:'requests/tick',data:r.charts.load_series,color:'#fb923c'},{name:'queue depth',data:r.charts.queue_series,color:'#38bdf8'}]):''}</div>`:''}
+   ${r.schedule?`<div class="card" style="margin-top:14px"><h2>Recorded interleaving</h2><div class="mono note">${esc(r.schedule.join(' → '))}</div></div>`:''}`,
+   lifecycle:()=>lifecycle(run),
+   findings:()=>run.findings.length?run.findings.map(f=>findingCard(f)).join(''):'<div class="empty">No findings: every invariant held in this simulation.</div>',
+   trace:()=>`<div class="note" style="margin-bottom:8px">${r.trace.length} events · deterministic logical clock · highlighted rows are cited by findings</div>${new Set(r.trace.map(e=>e.actor)).size>2?'<h3>Interleaving lanes</h3>'+lanes(r.trace,run.findings.flatMap(f=>f.trace_seq)):''}<h3 style="margin-top:14px">Event log</h3>${traceTable(r.trace,run.findings.flatMap(f=>f.trace_seq))}`,
+   ledger:()=>ledgerView(run),
+   evidence:()=>`<table><tr><th>Evidence ID</th><th>Kind</th><th>SHA-256</th><th>Bytes</th><th></th></tr>${run.evidence.map(e=>`<tr><td class="m">${esc(e.evidence_id)}</td><td>${esc(e.kind)}</td><td class="m">${esc(e.sha256.slice(0,32))}…</td><td class="m">${e.size}</td><td><button class="btn sm" data-ev="${esc(e.evidence_id)}">View</button></td></tr>`).join('')}</table><div id="evbox"></div>`,
+   report:()=>`<div class="note">Loading…</div>`};
+  const show=async t=>{$$('.tabs a',box).forEach(a=>a.classList.toggle('on',a.dataset.t===t));T.innerHTML=views[t]();bindTasks(T);
+    $$('[data-ev]',T).forEach(b=>b.onclick=async()=>{const e=await api(`/runs/${runId}/evidence?evidence_id=${b.dataset.ev}`);$('#evbox',T).innerHTML=`<pre>${esc(JSON.stringify(e.payload,null,1))}</pre>`});
+    if(t==='report'){const rep=await api(`/reliability-report/${runId}`);T.innerHTML=`<div class="row"><span class="pill neutral">${esc(rep.classification)}</span><span class="sp"></span><button class="btn sm" id="dlmd">Download .md</button><button class="btn sm" id="dljs">Download .json</button></div><p class="note">${esc(rep.disclaimer)}</p><pre style="max-height:600px">${esc(rep.markdown)}</pre><h3>Limitations</h3><ul>${rep.limitations.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`;
+      const dl=(n,t,c)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click()};
+      $('#dlmd',T).onclick=()=>dl(runId+'-report.md','text/markdown',rep.markdown);$('#dljs',T).onclick=()=>dl(runId+'-report.json','application/json',JSON.stringify(rep,null,2))}};
+  $$('.tabs a',box).forEach(a=>a.onclick=()=>show(a.dataset.t));show(tab);
+}
+
+/* ------------------------------------------------------------------ views */
+const V={};
+V.overview=async el=>{
+  const o=await api('/overview');
+  el.innerHTML=`<h1>Simulation overview</h1><p class="sub">Deterministic engineering simulations of payment reliability defects. ${esc(o.safety.notice)}</p>
+  <div class="grid g4"><div class="card kpi"><b>${o.counts.scenarios}</b><span>scenarios</span></div><div class="card kpi"><b>${o.counts.runs}</b><span>simulation runs</span></div><div class="card kpi"><b>${o.counts.findings}</b><span>simulated findings</span></div><div class="card kpi"><b>${o.counts.tasks}</b><span>engineering tasks</span></div></div>
+  <div class="grid g3" style="margin-top:14px"><div class="card"><h2>Findings by severity</h2>${sevBars(o.findings_by_severity)}</div>
+  <div class="card"><h2>Top failure types</h2>${o.top_failure_types.map(([k,v])=>`<div class="row" style="justify-content:space-between;margin:3px 0"><span class="mono" style="font-size:11.5px">${esc(k)}</span><b>${v}</b></div>`).join('')||'<span class="note">Run a scenario to see results.</span>'}</div>
+  <div class="card"><h2>Scenario coverage</h2><div class="score">${o.coverage.scenario_types_run}<span class="note"> / ${o.coverage.scenario_types_total} types</span></div><div class="bar"><i style="width:${o.coverage.scenario_types_run/o.coverage.scenario_types_total*100}%;background:var(--accent)"></i></div><p class="note">Never run: ${o.coverage.never_run.map(esc).join(', ')||'—'}</p><button class="btn pri sm" id="suite">Run full library (${o.counts.scenarios})</button> <span id="suiteprog" class="note"></span></div></div>
+  <div class="card" style="margin-top:14px"><h2>Recent runs</h2>${o.recent_runs.length?`<table><tr><th>Run</th><th>Scenario</th><th>Verdict</th><th>Findings</th><th>Seed</th></tr>${o.recent_runs.map(r=>`<tr class="click" data-run="${r.run_id}"><td class="m">${r.run_id}</td><td>${esc(r.name)}</td><td><span class="pill ${r.summary.verdict==='CLEAN'?'pass':'fail'}">${r.summary.verdict.replace('_',' ')}</span></td><td>${Object.entries(r.summary.by_severity).map(([s,n])=>`${sev(s)} ${n}`).join(' ')||'—'}</td><td class="m">${r.seed}</td></tr>`).join('')}</table>`:'<div class="empty">No runs yet. Start from the Scenario library.</div>'}</div>`;
+  $$('[data-run]',el).forEach(r=>r.onclick=()=>location.hash='#/runs/'+r.dataset.run);
+  $('#suite',el).onclick=e=>busy(e.target,async()=>{const sc=(await api('/scenarios')).items;let i=0;for(const s of sc){$('#suiteprog',el).textContent=`running ${++i}/${sc.length}: ${s.scenario_id}`;await post('/runs',{scenario_id:s.scenario_id})}toast('Library executed',true);V.overview(el)});
+};
+V.library=async el=>{
+  const sc=(await api('/scenarios')).items;const cats={};sc.forEach(s=>{const c=META.scenario_types.find(t=>t.type===s.type)?.category||'other';(cats[c]=cats[c]||[]).push(s)});
+  el.innerHTML=`<h1>Scenario library</h1><p class="sub">Each built-in scenario enables one defective implementation behaviour so the failure is deterministic and reproducible. Re-run with the <b>hardened</b> profile to see the fix pass.</p>
+  ${Object.entries(cats).map(([c,list])=>`<h2 style="margin-top:18px;text-transform:capitalize">${esc(c)}</h2><div class="grid g3">${list.map(s=>{const sp=META.scenario_types.find(t=>t.type===s.type);return `<div class="card"><div class="row"><b>${esc(s.name)}</b></div><div class="note mono">${esc(s.scenario_id)} · ${esc(s.type)} · seed ${s.seed}</div><p class="note" style="min-height:40px">${esc(sp.description)}</p>
+   <div class="note">Defect profile: ${Object.entries(sp.defect_profile).map(([k,v])=>`<span class="tag">${esc(k)}=${esc(v)}</span>`).join(' ')||'none (control)'}</div>
+   <div class="row" style="margin-top:10px"><button class="btn pri sm" data-run="${s.scenario_id}">Run</button><button class="btn sm" data-fix="${s.scenario_id}">Run hardened</button><button class="btn sm" data-cfg="${s.scenario_id}">Configure</button></div></div>`}).join('')}</div>`).join('')}`;
+  $$('[data-run]',el).forEach(b=>b.onclick=()=>busy(b,async()=>{const r=await post('/runs',{scenario_id:b.dataset.run});location.hash='#/runs/'+r.run_id}));
+  $$('[data-fix]',el).forEach(b=>b.onclick=()=>busy(b,async()=>{const r=await post('/runs',{scenario_id:b.dataset.fix,profile:'hardened'});location.hash='#/runs/'+r.run_id}));
+  $$('[data-cfg]',el).forEach(b=>b.onclick=()=>{CACHE.prefill=sc.find(s=>s.scenario_id===b.dataset.cfg);location.hash='#/console'});
+};
+V.console=async el=>{
+  const pre=CACHE.prefill;CACHE.prefill=null;const types=META.scenario_types;
+  el.innerHTML=`<h1>Configure &amp; run</h1><p class="sub">Build a synthetic scenario, choose the implementation behaviour under test and execute it deterministically (same type + seed + parameters ⇒ identical digest).</p>
+  <div class="card"><div class="form"><div><label>Scenario type</label><select id="type">${types.map(t=>`<option value="${t.type}">${esc(t.title)}</option>`).join('')}</select></div>
+  <div><label>Name</label><input id="name" placeholder="optional"></div><div><label>Seed</label><input id="seed" type="number" min="0" value="1"></div>
+  <div><label>Profile preset</label><select id="prof"><option>scenario_default</option><option>hardened</option><option>naive</option></select></div>
+  <div><label>Replay schedule (JSON actor list, optional)</label><input id="sched" placeholder='["worker-1","worker-2",…]'></div></div>
+  <p class="note" id="tdesc"></p><h3>Scenario parameters</h3><div class="form" id="params"></div><h3 style="margin-top:14px">Implementation under test (flags)</h3><div class="form" id="flags"></div>
+  <div class="row" style="margin-top:14px"><button class="btn pri" id="go">Start simulation</button><button class="btn" id="save">Save as scenario</button></div></div><div id="out" style="margin-top:18px"></div>`;
+  const draw=(vals,impl)=>{const t=types.find(x=>x.type===$('#type').value);$('#tdesc').textContent=t.description;$('#params').innerHTML=paramFields(t.params,vals);$('#flags').innerHTML=flagFields(impl||effectiveImpl(t.type,$('#prof').value))};
+  $('#type').onchange=()=>draw();$('#prof').onchange=()=>draw();
+  if(pre){$('#type').value=pre.type;$('#name').value=pre.name;$('#seed').value=pre.seed;draw(pre.params,{...effectiveImpl(pre.type,'scenario_default'),...(pre.implementation||{})})}else draw();
+  const cfg=()=>{const t=types.find(x=>x.type===$('#type').value);const c={type:t.type,name:$('#name').value||t.title,seed:+$('#seed').value,profile:'custom',params:readParams(el,t.params),implementation:readFlags(el)};const s=$('#sched').value.trim();if(s)try{c.schedule=JSON.parse(s)}catch{throw new Error('schedule must be JSON')}return c};
+  $('#go').onclick=e=>busy(e.target,async()=>{const r=await post('/runs',{config:cfg()});$('#out').innerHTML='<div id="rd"></div>';await renderRunDetail($('#rd'),r.run_id)});
+  $('#save').onclick=e=>busy(e.target,async()=>{const s=await post('/scenarios',cfg());toast('Saved '+s.scenario_id,true)});
+};
+V.runs=async(el,arg)=>{
+  if(arg){el.innerHTML='<div class="row"><a href="#/runs">← all runs</a></div><div id="rd" style="margin-top:10px"></div>';return renderRunDetail($('#rd',el),arg)}
+  const d=await api('/runs?limit=200');
+  el.innerHTML=`<h1>Runs &amp; compare</h1><p class="sub">Select 2–6 runs to compare findings and implementation differences (e.g. defective vs hardened).</p><div class="row" style="margin-bottom:10px"><button class="btn pri sm" id="cmp">Compare selected</button></div>
+  ${d.items.length?`<div class="card"><table><tr><th></th><th>Run</th><th>Scenario</th><th>Type</th><th>Verdict</th><th>Findings</th><th>Digest</th><th>Source</th></tr>${d.items.map(r=>`<tr class="click"><td><input type="checkbox" data-sel="${r.run_id}" style="width:auto"></td><td class="m" data-open="${r.run_id}">${r.run_id}</td><td data-open="${r.run_id}">${esc(r.name)}</td><td class="m">${esc(r.type)}</td><td><span class="pill ${r.summary.verdict==='CLEAN'?'pass':'fail'}">${r.summary.verdict.replace('_',' ')}</span></td><td>${Object.entries(r.summary.by_severity).map(([s,n])=>`${sev(s)} ${n}`).join(' ')||'—'}</td><td class="m">${r.digest.slice(0,10)}</td><td class="note">${esc(r.triggered_by)}</td></tr>`).join('')}</table></div>`:'<div class="empty">No runs yet.</div>'}<div id="cmpout" style="margin-top:16px"></div>`;
+  $$('[data-open]',el).forEach(c=>c.onclick=()=>location.hash='#/runs/'+c.dataset.open);
+  $('#cmp',el).onclick=e=>busy(e.target,async()=>{const ids=$$('[data-sel]:checked',el).map(c=>c.dataset.sel);const c=await api('/runs/compare?ids='+ids.join(','));
+    $('#cmpout',el).innerHTML=`<div class="card"><h2>Comparison</h2><p class="note">Differing implementation flags: ${c.differing_implementation_flags.map(f=>`<span class="tag">${esc(f)}</span>`).join(' ')||'none'} · differing params: ${c.differing_params.map(f=>`<span class="tag">${esc(f)}</span>`).join(' ')||'none'}</p>
+    <table><tr><th></th>${c.runs.map(r=>`<th>${r.run_id}<br><span class="note">${esc(r.name)}</span></th>`).join('')}</tr>
+    <tr><td>Verdict</td>${c.runs.map(r=>`<td><span class="pill ${r.summary.verdict==='CLEAN'?'pass':'fail'}">${r.summary.verdict.replace('_',' ')}</span></td>`).join('')}</tr>
+    <tr><td>Failure types</td>${c.runs.map(r=>`<td class="m">${r.summary.failure_types.map(esc).join('<br>')||'—'}</td>`).join('')}</tr>
+    <tr><td>Resolved vs first</td>${c.runs.map((r,i)=>`<td class="m">${i?r.resolved_vs_first.map(esc).join('<br>')||'—':'(baseline)'}</td>`).join('')}</tr>
+    <tr><td>New vs first</td>${c.runs.map((r,i)=>`<td class="m">${i?r.new_vs_first.map(esc).join('<br>')||'—':''}</td>`).join('')}</tr>
+    <tr><td>Failed expectations</td>${c.runs.map(r=>`<td class="m">${r.failed_expectations.map(esc).join('<br>')||'—'}</td>`).join('')}</tr>
+    ${c.differing_implementation_flags.map(f=>`<tr><td class="m">${esc(f)}</td>${c.runs.map(r=>`<td class="m">${esc(r.implementation[f])}</td>`).join('')}</tr>`).join('')}
+    <tr><td>Digest</td>${c.runs.map(r=>`<td class="m">${r.digest.slice(0,12)}</td>`).join('')}</tr></table></div>`})
+};
+V.idempotency=async el=>{
+  el.innerHTML=`<h1>Idempotency intelligence</h1><p class="sub">Runs six probes against an implementation model: repeated request, key reuse with different payload, concurrent same-key (25 interleavings), expired record, retry after timeout, partial failure.</p>
+  <div class="card"><div class="form"><div><label>Start from</label><select id="base"><option>naive</option><option selected>hardened</option></select></div><div><label>Client retry horizon (ticks)</label><input id="hz" type="number" value="3600"></div></div>
+  <h3 style="margin-top:12px">Implementation flags</h3><div class="form" id="flags"></div>
+  <details><summary>Optionally paste handler source for static inspection (heuristic)</summary><textarea id="src" placeholder="paste idempotency-handling source code…"></textarea></details>
+  <div class="row" style="margin-top:12px"><button class="btn pri" id="go">Analyze</button></div></div><div id="out" style="margin-top:16px"></div>`;
+  const draw=()=>$('#flags',el).innerHTML=flagFields($('#base').value==='naive'?META.naive_profile:META.hardened_profile);$('#base').onchange=draw;draw();
+  $('#go').onclick=e=>busy(e.target,async()=>{const a=await post('/idempotency/analyze',{profile:'hardened',implementation:readFlags(el),client_retry_horizon:+$('#hz').value,source_text:$('#src').value||undefined});
+   $('#out',el).innerHTML=`<div class="grid g3"><div class="card"><div class="score" style="color:${a.safe_count===a.total?'var(--ok)':'var(--crit)'}">${a.score}</div><div class="note">probes safe · ${esc(a.verdict.replace(/_/g,' '))}</div>${a.ttl_note?`<p class="note">${esc(a.ttl_note)}</p>`:''}</div><div class="card wide" style="grid-column:span 2"><h2>Probe results</h2><table><tr><th>Probe</th><th></th><th>Expected</th><th>Actual (simulated)</th></tr>${a.probes.map(p=>`<tr><td>${esc(p.label)}<div class="tag">${esc(p.failure_types.join(', '))}</div></td><td><span class="pill ${p.safe?'pass':'fail'}">${p.safe?'safe':'unsafe'}</span></td><td class="m">${esc(p.expected)}</td><td class="m">${esc(p.actual)}<br><button class="btn sm" data-open='${esc(JSON.stringify(p.reproduce.config))}'>Open run</button></td></tr>`).join('')}</table></div></div>
+   ${a.static_inspection?`<div class="card" style="margin-top:14px"><h2>Static inspection <span class="pill neutral">heuristic · low confidence</span></h2><table>${(a.static_inspection.checks||[]).map(c=>`<tr><td class="m">${esc(c.check)}</td><td><span class="pill ${c.present?'pass':'fail'}">${c.present?'found':'missing'}</span></td><td class="note">${esc(c.message||'')}</td></tr>`).join('')}</table></div>`:''}`;
+   $$('[data-open]',el).forEach(b=>b.onclick=()=>busy(b,async()=>{const r=await post('/runs',{config:JSON.parse(b.dataset.open)});location.hash='#/runs/'+r.run_id}))});
+};
+V.ledger=async el=>{
+  el.innerHTML=`<h1>Ledger integrity</h1><p class="sub">Validates double-entry invariants with exact Decimal arithmetic: debit/credit balance, journal consistency, uniqueness, balance reconciliation, reversal correctness, rounding/precision and atomicity.</p>
+  <div class="card"><div class="row"><select id="src" style="width:260px"><option value="defective">Synthetic sample — defective</option><option value="clean">Synthetic sample — clean</option><option value="json">Paste journals JSON</option><option value="run">From run id</option></select><input id="runid" placeholder="RUN-00001" style="width:140px;display:none"><button class="btn pri" id="go">Validate ledger</button></div>
+  <textarea id="json" style="display:none;margin-top:10px" placeholder='{"journals":[{"journal_id":"J1","txn_id":"T1","kind":"capture","lines":[{"account":"cash","debit":"10.00","credit":"0"},{"account":"rev","debit":"0","credit":"10.00"}]}],"reported_balances":{"cash":"10.00"}}'></textarea></div><div id="out" style="margin-top:16px"></div>`;
+  $('#src').onchange=()=>{$('#json').style.display=$('#src').value==='json'?'block':'none';$('#runid').style.display=$('#src').value==='run'?'block':'none'};
+  $('#go').onclick=e=>busy(e.target,async()=>{const k=$('#src').value;let body;if(k==='json'){try{body=JSON.parse($('#json').value)}catch{return toast('Invalid JSON')}}else if(k==='run')body={run_id:$('#runid').value.trim()};else body={sample:k};
+   const r=await post('/ledger/validate',body);$('#out',el).innerHTML=`<div class="card"><div class="row"><span class="pill ${r.validation.valid?'pass':'fail'}">${r.validation.valid?'LEDGER VALID':'INVARIANT VIOLATIONS'}</span><span class="note">source: ${esc(r.source)} · ${r.validation.journal_count} journals · synthetic</span></div>${checks(r.validation)}
+   <h3 style="margin-top:14px">Balances</h3><table>${Object.entries(r.validation.account_balances).map(([a,b])=>`<tr><td class="m">${esc(a)}</td><td class="m">${esc(b)}</td></tr>`).join('')}</table></div>
+   ${r.findings.map(f=>`<div class="card finding ${f.severity}" style="margin-top:12px"><div class="row"><b>${esc(f.title)}</b>${sev(f.severity)}<span class="pill neutral">SIMULATED</span></div><div class="kv"><b>Invariant</b><span class="mono">${esc(f.invariant)}</span><b>Hypothesis</b><span>${esc(f.root_cause_hypothesis)}</span><b>Fix</b><span>${esc(f.recommended_fix)}</span></div></div>`).join('')}`})
+};
+V.concurrency=async el=>{
+  const modes={lost_update:['none','lock','optimistic'],overdraft:['none','lock','optimistic'],concurrent_same_key:['check_then_act','atomic'],deadlock:['unordered','ordered'],state_race:['none','lock']};
+  el.innerHTML=`<h1>Concurrency &amp; race-condition lab</h1><p class="sub">Seeded cooperative scheduler interleaves actors deterministically. The exact schedule is recorded so any failing interleaving can be replayed.</p>
+  <div class="card"><div class="form"><div><label>Scenario</label><select id="sc">${Object.keys(modes).map(k=>`<option>${k}</option>`).join('')}</select></div><div><label>Mode (implementation)</label><select id="mode"></select></div>
+  <div><label>Actors</label><input id="act" type="number" min="2" max="20" value="4"></div><div><label>Seed</label><input id="seed" type="number" value="1"></div><div><label>Explore N seeds</label><input id="ex" type="number" min="0" max="200" value="25"></div>
+  <label class="chk"><input type="checkbox" id="abort">abort deadlock victim</label></div><div><label>Replay schedule (JSON, optional)</label><input id="sch"></div>
+  <div class="row" style="margin-top:12px"><button class="btn pri" id="go">Simulate</button></div></div><div id="out" style="margin-top:16px"></div>`;
+  const dm=()=>$('#mode').innerHTML=modes[$('#sc').value].map(m=>`<option>${m}</option>`).join('');$('#sc').onchange=dm;dm();
+  $('#go').onclick=e=>busy(e.target,async()=>{const b={scenario:$('#sc').value,mode:$('#mode').value,actors:+$('#act').value,seed:+$('#seed').value,explore:+$('#ex').value,abort_on_deadlock:$('#abort').checked};
+   if($('#sch').value.trim())try{b.schedule=JSON.parse($('#sch').value)}catch{return toast('schedule must be JSON')}
+   const r=await post('/concurrency/simulate',b);const run=r.run;const ex=r.exploration;
+   $('#out',el).innerHTML=`<div class="grid g3"><div class="card"><span class="pill ${run.summary.verdict==='CLEAN'?'pass':'fail'}">${run.summary.verdict.replace('_',' ')}</span> <span class="tag">${run.run_id}</span><p>${run.expectations.map(x=>`<div>${esc(x.description)}<br><span class="mono note">expected ${esc(x.expected)} · actual ${esc(x.actual)}</span></div>`).join('')}</p></div>
+   <div class="card"><h2>Exploration</h2>${ex?`<div class="score">${ex.failing_seeds}<span class="note"> / ${ex.seeds_tried} interleavings fail</span></div><div class="note">failure rate ${ex.failure_rate}${ex.first_failure?` · first failing seed <b>${ex.first_failure.seed}</b>`:''}</div>${ex.first_failure?'<button class="btn sm" id="useSeed">Reproduce first failing seed</button>':''}`:'<span class="note">disabled</span>'}</div>
+   <div class="card"><h2>Reproduce exactly</h2><div class="note">seed ${r.reproduce.seed}</div><div class="mono note" style="max-height:80px;overflow:auto">${esc(JSON.stringify(r.schedule))}</div><button class="btn sm" id="useSched">Replay this schedule</button></div></div>
+   <h3 style="margin-top:16px">Interleaving lanes</h3>${lanes(r.trace,run.findings.flatMap(f=>f.trace_seq))}${run.findings.map(f=>findingCard(f)).join('')}`;
+   bindTasks(el);if($('#useSeed',el))$('#useSeed',el).onclick=()=>{$('#seed').value=ex.first_failure.seed;$('#ex').value=0;$('#go').click()};$('#useSched',el).onclick=()=>{$('#sch').value=JSON.stringify(r.schedule);$('#go').click()}})
+};
+V.retry=async el=>{
+  el.innerHTML=`<h1>Retry &amp; recovery intelligence</h1><p class="sub">Static policy analysis against transaction semantics, plus a deterministic retry-storm simulation (amplification, duplicate effects, dead-letter handling).</p>
+  <div class="card"><h3>Retry policy</h3><div class="form"><div><label>max_attempts</label><input id="ma" type="number" value="10"></div><div><label>base delay</label><input id="ba" type="number" value="1"></div><div><label>factor</label><input id="fa" type="number" value="1"></div><div><label>cap</label><input id="ca" type="number" value="60"></div><div><label>jitter</label><select id="ji"><option>none</option><option>full</option><option>equal</option></select></div><div><label>timeout</label><input id="to" type="number" value="3"></div><label class="chk"><input type="checkbox" id="dl">dead-letter queue</label><label class="chk"><input type="checkbox" id="sh">server sheds expired requests</label></div>
+  <h3 style="margin-top:12px">Transaction semantics</h3><div class="form"><div><label>operation</label><select id="op"><option>create_payment</option><option>capture</option><option>refund</option><option>webhook_delivery</option><option>read</option></select></div><label class="chk"><input type="checkbox" id="hk">has idempotency key</label><div><label>deadline</label><input id="dd" type="number" value="120"></div></div>
+  <h3 style="margin-top:12px">Storm simulation</h3><div class="form"><div><label>clients</label><input id="cl" type="number" value="200"></div><div><label>outage ticks</label><input id="ou" type="number" value="20"></div><div><label>capacity / tick</label><input id="cp" type="number" value="20"></div><div><label>seed</label><input id="sd" type="number" value="1"></div></div>
+  <div class="row" style="margin-top:12px"><button class="btn pri" id="an">Analyze policy</button><button class="btn pri" id="st">Simulate storm</button></div></div><div id="out" style="margin-top:16px"></div>`;
+  const pol=()=>({max_attempts:+$('#ma').value,base:+$('#ba').value,factor:+$('#fa').value,cap:+$('#ca').value,jitter:$('#ji').value,timeout:+$('#to').value,dead_letter:$('#dl').checked});
+  $('#an').onclick=e=>busy(e.target,async()=>{const a=await post('/retry/analyze',{policy:pol(),semantics:{operation:$('#op').value,has_idempotency_key:$('#hk').checked,deadline:+$('#dd').value}});
+   $('#out',el).innerHTML=`<div class="grid g2"><div class="card"><div class="row"><h2 style="margin:0">Policy issues</h2><span class="pill ${a.safe?'pass':'fail'}">${a.safe?'acceptable':'unsafe'}</span></div><p class="note">worst-case total wait ${a.worst_case_wait} ticks</p>${a.issues.map(i=>`<div style="margin:8px 0">${sev(i.severity)} <b class="mono">${esc(i.code)}</b><div class="note">${esc(i.message)}</div></div>`).join('')||'<span class="note">No issues.</span>'}</div>
+   <div class="card"><h2>Recommended strategy for <span class="mono">${esc(a.semantics.operation)}</span></h2><pre>${esc(JSON.stringify(a.recommendation.policy,null,1))}</pre><ul>${a.recommendation.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div></div>`});
+  $('#st').onclick=e=>busy(e.target,async()=>{const p=pol();const r=await post('/retry/storm',{params:{...p,clients:+$('#cl').value,outage:+$('#ou').value,capacity:+$('#cp').value,shed_expired:$('#sh').checked},seed:+$('#sd').value,profile:'custom',implementation:{idempotency:$('#hk').checked?'key_payload':'none'}});
+   const s=r.observations.storm;$('#out',el).innerHTML=`<div class="grid g4"><div class="card kpi"><b>${s.amplification}×</b><span>load amplification</span></div><div class="card kpi"><b>${s.peak_load_per_tick}</b><span>peak requests / tick (capacity ${s.capacity_per_tick})</span></div><div class="card kpi"><b>${s.succeeded}/${s.clients}</b><span>clients succeeded</span></div><div class="card kpi"><b>${s.duplicate_effects}</b><span>duplicate executions</span></div></div>
+   <div class="card" style="margin-top:14px"><h2>Load over time</h2>${chart([{name:'requests/tick',data:r.charts.load_series,color:'#fb923c'},{name:'queue depth',data:r.charts.queue_series,color:'#38bdf8'}])}<p class="note">dead-lettered ${s.dead_lettered} · dropped without DLQ ${s.abandoned_without_dlq} · shed ${s.shed_requests} · late-processed ${s.late_processed_requests} · <span class="tag">${r.run_id}</span></p></div>
+   <div class="card" style="margin-top:14px"><h2>Expectations</h2>${expTable(r.expectations)}</div>${r.findings.map(f=>findingCard(f)).join('')}`;bindTasks(el)});
+};
+V.settlement=async el=>{
+  const sp=META.scenario_types.find(t=>t.type==='settlement');
+  el.innerHTML=`<h1>Settlement &amp; reversal simulation</h1><p class="sub">Generates a synthetic processor settlement feed with injected anomalies and reconciles it against the internal ledger. <b>Simulation findings are not actual financial discrepancies.</b></p>
+  <div class="card"><div class="form">${paramFields(sp.params,{mismatch:2,delayed:2,missing:2,duplicate:2,refund_mismatch:1,partial_after:0})}<div><label>seed</label><input id="seed" type="number" value="1"></div><label class="chk"><input type="checkbox" id="dd" checked>importer dedups</label><label class="chk"><input type="checkbox" id="ba" checked>batch atomic</label></div>
+  <div class="row" style="margin-top:12px"><button class="btn pri" id="go">Simulate settlement</button></div></div><div id="out" style="margin-top:16px"></div>`;
+  $('#go').onclick=e=>busy(e.target,async()=>{const r=await post('/settlement/simulate',{params:readParams(el,sp.params),seed:+$('#seed').value,profile:'custom',implementation:{settlement_dedup:$('#dd').checked,batch_atomic:$('#ba').checked}});
+   const s=r.observations.settlement,rec=s.reconciliation;
+   $('#out',el).innerHTML=`<div class="grid g4"><div class="card kpi"><b class="mono" style="font-size:20px">${esc(rec.expected_total)}</b><span>expected (internal ledger)</span></div><div class="card kpi"><b class="mono" style="font-size:20px">${esc(rec.settled_total)}</b><span>settled by cutoff (feed)</span></div><div class="card kpi"><b class="mono" style="font-size:20px;color:${rec.variance==='0.00'?'var(--ok)':'var(--crit)'}">${esc(rec.variance)}</b><span>variance (Decimal)</span></div><div class="card kpi"><b>${rec.discrepancies.length}</b><span>simulated discrepancies</span></div></div>
+   <div class="card" style="margin-top:14px"><div class="row"><h2 style="margin:0">Discrepancies</h2><span class="pill neutral">${esc(rec.classification)}</span></div><table><tr><th>Ref</th><th>Kind</th><th>Expected</th><th>Actual</th></tr>${rec.discrepancies.map(d=>`<tr><td class="m">${esc(d.ref)}</td><td class="mono">${esc(d.kind)}</td><td class="m">${esc(d.expected??'—')}</td><td class="m">${esc(d.actual??'—')}</td></tr>`).join('')||'<tr><td colspan=4 class="note">none</td></tr>'}</table></div>
+   <div class="grid g2" style="margin-top:14px"><div class="card"><h2>Injected anomalies</h2><pre>${esc(JSON.stringify(s.injected,null,1))}</pre></div><div class="card"><h2>Importer model</h2><pre>${esc(JSON.stringify(s.importer,null,1))}</pre><span class="pill ${s.importer_ledger_validation.valid?'pass':'fail'}">importer ledger ${s.importer_ledger_validation.valid?'valid':'violations'}</span></div></div>
+   ${r.findings.map(f=>findingCard(f)).join('')}<p class="note"><a href="#/runs/${r.run_id}">Open full run ${r.run_id}</a></p>`;bindTasks(el)})
+};
+V.findings=async el=>{
+  const d=await api('/findings');
+  el.innerHTML=`<h1>Findings</h1><p class="sub">All simulated findings across runs. Each carries reproduction steps, evidence and a recommended fix; create an engineering task to hand it to the repair workflow (Module 02).</p>
+  <div class="row" style="margin-bottom:12px"><select id="fs" style="width:160px"><option value="">all severities</option><option>critical</option><option>high</option><option>medium</option><option>low</option></select><input id="ft" placeholder="filter failure type…" style="width:240px"><span class="note">${d.total} findings</span></div><div id="list"></div>`;
+  const draw=()=>{const s=$('#fs').value,t=$('#ft').value.toUpperCase();const l=d.items.filter(f=>(!s||f.severity===s)&&(!t||f.failure_type.includes(t)));$('#list').innerHTML=l.map(f=>findingCard(f)).join('')||'<div class="empty">No findings. Run scenarios first.</div>';bindTasks(el)};
+  $('#fs').onchange=draw;$('#ft').oninput=draw;draw();
+};
+V.tasks=async el=>{
+  const d=await api('/tasks');
+  el.innerHTML=`<h1>Engineering tasks</h1><p class="sub">Tasks are drafts for the repair workflow. Patches are prepared in an isolated worktree only after human approval; nothing is applied to production.</p>
+  ${d.items.map(t=>`<div class="card" style="margin-bottom:12px"><div class="row"><b>${esc(t.title)}</b><span class="pill ${t.priority==='P0'?'critical':t.priority==='P1'?'high':'medium'}">${t.priority}</span><span class="pill neutral">${esc(t.status.replace(/_/g,' '))}</span><span class="sp"></span><button class="btn sm pri" data-val="${esc(t.task_id)}">Validate fix in simulation</button></div>
+   <div class="note">${esc(t.finding_id)} · M02 sync: ${esc(JSON.stringify(t.module_sync.module_02))}</div>
+   ${t.validation_result?`<div class="kv"><b>Validation</b><span>${t.validation_result.validated===true?'<span class="pill pass">fix clears the finding in simulation</span>':t.validation_result.validated===false?'<span class="pill fail">finding persists</span>':'<span class="pill neutral">n/a</span>'} <span class="note">${esc(t.validation_result.reason||t.validation_result.scope||'')}</span></span></div>`:''}
+   <details><summary>Repair plan (Module 02 contract)</summary><p>${esc(t.repair_plan.summary)}</p><ol>${t.repair_plan.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol><b>Acceptance</b><ul>${t.repair_plan.acceptance_criteria.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></details>
+   <details><summary>Patch request (Module 03 contract)</summary><pre>${esc(JSON.stringify(t.patch_request,null,1))}</pre></details>
+   <details><summary>Regression test for Module 05</summary><pre>${esc(t.validation_plan.regression_test)}</pre></details></div>`).join('')||'<div class="empty">No tasks yet. Open a finding and choose “Create engineering task”.</div>'}`;
+  $$('[data-val]',el).forEach(b=>b.onclick=()=>busy(b,async()=>{const t=await post(`/tasks/${b.dataset.val}/validate`);toast('Validation: '+t.status.replace(/_/g,' '),t.validation_result.validated!==false);V.tasks(el)}));
+};
+V.repo=async el=>{
+  el.innerHTML=`<h1>Repository intelligence</h1><p class="sub">Read-only static scan that locates payment services, transaction handlers, models, ledger code, webhooks, retry logic, idempotency mechanisms and tests (Module 01 contract). Secrets and card-like numbers are redacted. Path must be inside the allowed roots (<span class="mono">FORGEX_REPO_ROOTS</span>).</p>
+  <div class="card"><div class="row"><input id="p" placeholder="/path/to/repository" style="width:420px"><button class="btn pri" id="go">Scan</button></div></div><div id="out" style="margin-top:16px"></div>`;
+  $('#go').onclick=e=>busy(e.target,async()=>{const r=await post('/repository/scan',{path:$('#p').value});
+   $('#out',el).innerHTML=`<div class="grid g4">${Object.entries(r.category_counts).map(([k,v])=>`<div class="card kpi"><b>${v}</b><span>${esc(k.replace(/_/g,' '))}</span></div>`).join('')}</div>
+   <div class="card" style="margin-top:14px"><h2>Static signals <span class="pill neutral">heuristic</span></h2>${r.static_signals.map(s=>`<div style="margin:8px 0">${sev(s.severity)} <b class="mono">${esc(s.code)}</b> <span class="note">${esc(s.message)}</span>${s.evidence.map(x=>`<div class="tag">${esc(x.path)}:${x.line}</div>`).join('')}</div>`).join('')||'<span class="note">None.</span>'}</div>
+   <div class="card" style="margin-top:14px"><h2>Test files (${r.tests.length})</h2>${r.tests.slice(0,30).map(t=>`<div class="mono note">${esc(t.path)} → ${t.covers.map(esc).join(', ')}</div>`).join('')||'<span class="note">none found</span>'}</div><p class="note">${esc(r.note)} · ${r.files_scanned} files</p>`})
+};
+
+/* ------------------------------------------------------------------ router */
+async function route(){
+  const [_,name='overview',arg]=location.hash.replace(/^#\/?/,'/'+(location.hash?'':'overview')).split('/').slice(0);
+  const parts=location.hash.replace(/^#\/?/,'').split('/');const r=parts[0]||'overview',a=parts[1];
+  $$('nav a').forEach(x=>x.classList.toggle('on',x.dataset.r===r));
+  const el=$('#view');el.innerHTML='<div class="note">Loading…</div>';
+  try{await (V[r]||V.overview)(el,a)}catch(e){if(!document.querySelector('.toast'))toast(e.message);console.error(e)}
+}
+window.addEventListener('hashchange',route);
+(async()=>{try{META=await api('/meta')}catch(e){document.body.innerHTML='<pre>API unavailable: '+esc(e.message)+'</pre>';return}route()})();
+</script>
+</body>
+</html>

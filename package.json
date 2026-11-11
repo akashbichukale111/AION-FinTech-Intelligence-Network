@@ -1,0 +1,21 @@
+{
+  "name": "aion-unified-platform",
+  "version": "2.1.0",
+  "description": "AION — Autonomous Agentic Commerce & AURA Financial Intelligence Workbench (PayPal AI Hackathon 2026)",
+  "main": "start.py",
+  "scripts": {
+    "start": "python start.py",
+    "dev": "python start.py",
+    "open": "python start.py --open"
+  },
+  "keywords": [
+    "paypal",
+    "ag-grid",
+    "hackathon",
+    "agentic-commerce",
+    "financial-intelligence",
+    "autonomous-agents"
+  ],
+  "author": "AION Team",
+  "license": "MIT"
+}

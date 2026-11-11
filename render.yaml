@@ -1,0 +1,63 @@
+services:
+  # 1. AION Master Command Portal (Vite Frontend)
+  - type: web
+    name: aion-master-portal
+    env: static
+    buildCommand: cd AION-Main-Platform && npm install && npm run build
+    staticPublishPath: ./AION-Main-Platform/dist
+    envVars:
+      - key: VITE_AURA_URL
+        fromService:
+          type: web
+          name: aion-aura-workbench
+          property: host
+      - key: VITE_FORGEX_URL
+        fromService:
+          type: web
+          name: aion-forgex-studio
+          property: host
+
+  # 2. AURA Financial Intelligence Workbench (FastAPI Backend + AG Grid)
+  - type: web
+    name: aion-aura-workbench
+    env: python
+    buildCommand: pip install -r aura_platform/requirements.txt
+    startCommand: cd aura_platform && python run_server.py
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PAYPAL_MODE
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+
+  # 3. FORGEX Autonomous Studio (Next.js 14)
+  - type: web
+    name: aion-forgex-studio
+    env: node
+    buildCommand: cd forgex/AEGISNOVA && npm install && npm run build
+    startCommand: cd forgex/AEGISNOVA && npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_FORGEX_BACKEND_URL
+        fromService:
+          type: web
+          name: aion-unwind-gate
+          property: host
+
+  # 4. UNWIND Cryptographic Warrant Gate (FastAPI Backend)
+  - type: web
+    name: aion-unwind-gate
+    env: python
+    buildCommand: cd forgex/backend && pip install -r requirements.txt
+    startCommand: cd forgex/backend && python run_forgex_backend.py
+    envVars:
+      - key: PORT
+        value: 8001

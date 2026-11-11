@@ -1,0 +1,120 @@
+"""FinTech planning templates. Simulated/supplied evidence only - never touch real funds. Money math uses Decimal."""
+
+def T(key, name, kw, signals, hyps, steps, tests, security, rollback, money=True, db=False, accept=()):
+    return dict(key=key, name=name, keywords=kw, signals=signals, hypotheses=hyps, steps=steps, tests=tests,
+                security=security, rollback=rollback, money=money, db=db, acceptance=list(accept))
+
+def H(id, title, expl, sig, inv, alt):
+    return dict(id=id, title=title, explanation=expl, signals=sig, investigation=inv, alternatives=alt)
+
+FINTECH = [
+ T("duplicate_payment", "Duplicate payment prevention", ["duplicate payment", "double charge", "charged twice", "duplicate charge", "double payment"],
+   ["payment", "charge", "idempotency", "dedupe", "retry", "lock", "transaction"],
+   [H("duplicate_payment.1", "Payment creation may lack enforced idempotency/uniqueness",
+      "Two requests for the same payment intent may both pass the existence check and both be committed.",
+      ["idempotency", "payment", "charge", "dedupe"], ["Check for a unique constraint on (merchant, idempotency key).", "Reproduce with two concurrent identical requests on a simulated gateway."],
+      ["Client or gateway replays the request after a timeout", "Two workers consume the same queue message"]),
+    H("duplicate_payment.2", "Retry path may resubmit a charge instead of reusing the first attempt",
+      "A timeout handler might create a new attempt without the original attempt's key or state check.",
+      ["retry", "timeout", "charge"], ["Trace the retry code path for key reuse and state check.", "Inspect logs for two attempts sharing one order id."],
+      ["Upstream load balancer retry", "User double-click on the client"])],
+   [("Enforce uniqueness at the database level", "Add a unique constraint on the idempotency key and handle the conflict by returning the original result."),
+    ("Make check-and-create atomic", "Perform the existence check and insert inside one transaction (or use an upsert) so concurrent requests cannot both succeed."),
+    ("Reuse the attempt on retry", "Reuse the original key and verify attempt state before any resubmission.")],
+   ["Concurrent duplicate-request test (simulated gateway)", "Retry-after-timeout test asserting a single charge", "Decimal amount equality test"],
+   ["Idempotency keys must be scoped per merchant/user to prevent cross-tenant replay", "Never log full card data or tokens"],
+   ["Revert the code change", "Keep the unique constraint if no conflicts exist; otherwise drop via a reviewed downgrade"], db=True,
+   accept=["Concurrent duplicate requests produce exactly one charge in simulation"]),
+ T("timeout_retry", "Payment timeout and retry failures", ["timeout", "timed out", "retry", "retries", "backoff", "gateway"],
+   ["timeout", "retry", "backoff", "gateway", "client", "circuit"],
+   [H("timeout_retry.1", "Timeouts may be unbounded or retried without backoff/limits", "Missing bounded timeouts or jitter can cause retry storms and uncertain payment states.",
+      ["timeout", "retry", "backoff", "gateway"], ["Review timeout and retry configuration values.", "Check how an unknown outcome is reconciled after a timeout."],
+      ["Gateway-side degradation", "Network or DNS issues"])],
+   [("Set explicit timeouts and bounded retries", "Use exponential backoff with jitter and a retry cap."),
+    ("Handle the unknown outcome state", "After a timeout, query the gateway status before any retry.")],
+   ["Simulated gateway timeout test", "Retry cap and backoff test"], ["Do not retry non-idempotent calls without a key"],
+   ["Revert the code change", "Restore the previous timeout configuration"], accept=["Timeouts lead to a reconciled state, not a blind retry"]),
+ T("webhook_failure", "Webhook delivery failures", ["webhook", "callback", "delivery failed", "signature"],
+   ["webhook", "callback", "signature", "event", "queue", "retry"],
+   [H("webhook_failure.1", "Webhook handler may fail non-idempotently or reject valid signatures", "Replayed or reordered events and signature/clock issues may cause failures or double processing.",
+      ["webhook", "signature", "event", "callback"], ["Verify signature validation against a known-good simulated payload.", "Check event-id deduplication."],
+      ["Endpoint downtime", "Provider-side delivery issue"])],
+   [("Verify signatures with a constant-time compare", "Use the raw body; enforce a timestamp tolerance."),
+    ("Deduplicate by event id and acknowledge quickly", "Persist the event first, process asynchronously, return 2xx promptly.")],
+   ["Replayed event test", "Invalid signature test", "Out-of-order event test"], ["Rotate and store webhook secrets outside the code", "Reject unsigned requests"],
+   ["Revert the handler change", "Keep the persisted event log"], money=False, db=True, accept=["Replayed webhook events are processed exactly once"]),
+ T("idempotency_defect", "Idempotency defects", ["idempotency", "idempotent", "replay"],
+   ["idempotency", "idempotent", "key", "replay", "cache"],
+   [H("idempotency_defect.1", "Idempotency keys may not be persisted with the request fingerprint", "Same key with a different payload may be accepted, or the stored response may not be returned.",
+      ["idempotency", "key", "replay"], ["Check that the key, request hash and response are stored atomically.", "Test the same key with a different body."], ["Key expiry too short", "Cache eviction"])],
+   [("Persist key + request fingerprint + response atomically", "Return the stored response on replay; return 422 for a payload mismatch.")],
+   ["Replay with same payload", "Replay with different payload", "Key expiry test"], ["Scope keys to the authenticated principal"],
+   ["Revert the code change"], db=True, accept=["Replay returns the original response"]),
+ T("ledger_inconsistency", "Ledger inconsistency", ["ledger", "balance mismatch", "double entry", "journal", "out of balance"],
+   ["ledger", "journal", "entry", "balance", "debit", "credit", "account"],
+   [H("ledger_inconsistency.1", "Postings may be written outside a single atomic transaction", "Debit and credit rows may be committed separately, or use float arithmetic, leaving the ledger unbalanced.",
+      ["ledger", "entry", "debit", "credit", "balance"], ["Verify debit and credit are in one transaction.", "Search for float usage in money paths."], ["Manual adjustments", "Backfill script defects"])],
+   [("Post double-entry atomically", "Write all legs of a journal entry in one transaction and assert sum(debits)==sum(credits) using Decimal."),
+    ("Add a reconciliation check", "Add a read-only job that reports imbalance on simulated/supplied data.")],
+   ["Balanced-entry invariant test", "Partial-failure rollback test"], ["Ledger rows must be append-only; corrections via reversal entries"],
+   ["Revert the code change", "Never rewrite historical entries; use reversing entries"], db=True, accept=["Sum of debits equals sum of credits in all test scenarios"]),
+ T("concurrent_transaction", "Concurrent transaction bugs", ["race condition", "concurrent", "deadlock", "simultaneous", "lost update"],
+   ["lock", "concurrent", "transaction", "balance", "update", "version", "async"],
+   [H("concurrent_transaction.1", "Read-modify-write on balances without locking or version checks", "Concurrent updates may overwrite each other (lost update) or deadlock due to inconsistent lock order.",
+      ["lock", "balance", "update", "version", "transaction"], ["Review isolation level and locking (SELECT FOR UPDATE / optimistic version).", "Run a concurrent simulation."], ["Cache staleness", "Duplicate queue consumers"])],
+   [("Introduce row locking or optimistic versioning", "Use a consistent lock order; retry on version conflict with a cap.")],
+   ["Concurrent update simulation", "Deadlock ordering test"], ["Ensure authorization checks run inside the same transaction scope"],
+   ["Revert the code change", "Disable via feature flag"], db=True, accept=["Concurrent updates never lose a write in simulation"]),
+ T("refund_failure", "Refund processing failures", ["refund", "chargeback", "reversal"],
+   ["refund", "reversal", "payment", "amount", "partial", "ledger"],
+   [H("refund_failure.1", "Refund may not validate cumulative refunded amount against the captured amount", "Partial refunds may exceed the original amount, or the refund and ledger entry may not be atomic.",
+      ["refund", "amount", "partial", "reversal"], ["Check cumulative refunded <= captured using Decimal.", "Check refund idempotency."], ["Gateway partial failure", "Currency rounding"])],
+   [("Validate cumulative refund amount", "Compare Decimal amounts with an explicit rounding rule."),
+    ("Make refund and ledger reversal atomic and idempotent", "Single transaction; idempotency key per refund request.")],
+   ["Over-refund rejection test", "Repeat-refund idempotency test", "Rounding edge-case test"], ["Refund permission should be role-gated and audited"],
+   ["Revert the code change", "Compensate wrong refunds via reviewed reversal entries (human-run)"], db=True, accept=["Cumulative refunds can never exceed the captured amount"]),
+ T("settlement_discrepancy", "Settlement discrepancies", ["settlement", "payout", "reconciliation", "discrepancy", "reconcile"],
+   ["settlement", "payout", "reconcil", "fee", "batch", "report", "amount"],
+   [H("settlement_discrepancy.1", "Settlement totals may differ due to rounding, fee handling or cut-off windows", "Float/rounding mismatches or timezone cut-off differences between internal records and the provider report.",
+      ["settlement", "fee", "batch", "amount", "reconcil"], ["Compare internal and provider totals on a supplied sample with Decimal.", "Check cut-off time zones."], ["Missing late transactions", "Provider-side fee changes"])],
+   [("Use Decimal with an explicit rounding policy", "Round only at defined boundaries."),
+    ("Reconcile by transaction id, not by totals only", "Produce a read-only discrepancy report on supplied data.")],
+   ["Rounding policy test", "Cut-off boundary test", "Missing/extra transaction report test"], ["Reports must not expose full account numbers"],
+   ["Revert the code change", "Reports are read-only; no data rollback needed"], accept=["Discrepancy report matches the supplied sample exactly"]),
+ T("api_auth_vuln", "API authentication vulnerabilities", ["authentication", "authorization", "jwt", "api key", "auth bypass", "token", "idor"],
+   ["auth", "token", "jwt", "permission", "session", "key", "middleware", "role"],
+   [H("api_auth_vuln.1", "Auth checks may be missing, inconsistent or bypassable on some endpoints", "Endpoints may skip the auth dependency, or object-level authorization may be missing (IDOR).",
+      ["auth", "token", "jwt", "permission", "middleware", "role"], ["Enumerate endpoints and confirm each has an auth dependency.", "Test cross-tenant object access with simulated users."], ["Misconfigured gateway", "Token validation library defect"])],
+   [("Centralize authentication and enforce deny-by-default", "Apply the auth dependency at the router level."),
+    ("Add object-level authorization", "Verify ownership/tenant on every resource access.")],
+   ["Unauthenticated access test per endpoint", "Cross-tenant access test", "Expired/invalid token test"],
+   ["Validate JWT signature, expiry and audience", "Never log tokens", "Rotate any exposed secret (human action)"],
+   ["Revert the code change", "Rotate keys if secrets were involved"], money=False, accept=["No endpoint is reachable without valid auth in tests"]),
+ T("db_txn_integrity", "Database transaction integrity", ["transaction", "rollback", "commit", "isolation", "atomic", "partial write"],
+   ["transaction", "commit", "rollback", "session", "atomic", "isolation", "db"],
+   [H("db_txn_integrity.1", "Multi-step writes may commit partially or swallow exceptions", "Commits inside loops or caught exceptions without rollback can leave partial state.",
+      ["transaction", "commit", "rollback", "session", "atomic"], ["Find commit calls inside helper functions.", "Inject a failure mid-operation and inspect state."], ["Connection pool issues", "Autocommit misconfiguration"])],
+   [("Define one transaction boundary per business operation", "Commit once at the boundary and roll back on any exception.")],
+   ["Failure-injection test asserting full rollback", "Isolation-level test"], ["Do not leak SQL errors to API clients"],
+   ["Revert the code change"], db=True, accept=["Injected failures leave no partial writes"]),
+]
+
+GENERIC_IMPL = {
+ "bug": [("Implement the minimal fix for the verified root cause", "Change only what the verified hypothesis requires.")],
+ "feature": [("Define the interface/contract", "Document inputs/outputs and error handling before coding."), ("Implement the feature behind a flag", "Keep the default behaviour unchanged until validated.")],
+ "refactor": [("Add characterization tests", "Pin the current behaviour first."), ("Refactor in small, behaviour-preserving commits", "Run tests after each commit.")],
+ "security": [("Implement the remediation", "Apply least-privilege and deny-by-default."), ("Add negative/abuse-case tests", "Prove the exploit path is closed.")],
+ "performance": [("Capture a baseline measurement", "Use a reproducible benchmark."), ("Optimize the verified hotspot", "Change one thing at a time."), ("Re-measure and compare", "Record before/after.")],
+ "tech_debt": [("Isolate the debt area behind tests", "Avoid behaviour change."), ("Apply incremental cleanup", "Small reviewable commits.")],
+ "fintech_reliability": [("Implement the reliability fix", "Use Decimal for money; keep changes minimal.")],
+}
+
+def match_templates(text: str, logs: str, limit=2):
+    blob = f"{text}\n{logs}".lower()
+    scored = []
+    for t in FINTECH:
+        hits = [k for k in t["keywords"] if k in blob]
+        if hits:
+            scored.append((len(hits), t, hits))
+    scored.sort(key=lambda x: -x[0])
+    return [{**t, "matched_keywords": h} for _, t, h in scored[:limit]]

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FORGEX · Repository Intelligence</title>
+<style>
+:root{--bg:#0f1420;--p:#171e2e;--b:#2a3550;--t:#e6eaf3;--m:#8b97b3;--a:#5b9cff;--ok:#3ecf8e;--w:#f5b942;--e:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--t);display:flex;min-height:100vh}
+aside{width:300px;background:var(--p);border-right:1px solid var(--b);padding:16px;overflow:auto}
+main{flex:1;padding:20px;overflow:auto;min-width:0}h1{font-size:16px;margin:0 0 12px;letter-spacing:.08em}h3{margin:18px 0 8px}
+input[type=text]{width:100%;padding:8px;background:var(--bg);border:1px solid var(--b);color:var(--t);border-radius:6px}
+button{background:var(--a);color:#fff;border:0;padding:7px 12px;border-radius:6px;cursor:pointer;margin-top:6px}button.sec{background:var(--b)}
+.card{background:var(--p);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px}
+.hist{padding:8px;border:1px solid var(--b);border-radius:6px;margin-bottom:6px;cursor:pointer}.hist.sel{border-color:var(--a)}
+.tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;background:var(--b);margin-right:4px}
+.done{color:var(--ok)}.failed{color:var(--e)}.running,.queued{color:var(--w)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}.tabs button{background:var(--p);border:1px solid var(--b);margin:0}.tabs button.on{background:var(--a)}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:5px 8px;border-bottom:1px solid var(--b);text-align:left;vertical-align:top}
+.m{color:var(--m)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.big{font-size:22px;font-weight:600}
+.bar{height:8px;background:var(--b);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--a)}
+details{margin-left:14px}summary{cursor:pointer}.file{margin-left:30px;font-size:12px}pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);padding:8px;border-radius:6px;font-size:11px;margin:4px 0}
+.sev-high{border-left:3px solid var(--e)}.sev-medium{border-left:3px solid var(--w)}.sev-low{border-left:3px solid var(--a)}.sev-info{border-left:3px solid var(--b)}
+.empty{color:var(--m);padding:24px;text-align:center;border:1px dashed var(--b);border-radius:8px}svg text{fill:var(--t);font-size:11px}
+</style></head><body>
+<aside>
+  <h1>FORGEX · MODULE 01</h1>
+  <div class="card"><b>Scan local path</b>
+    <input type="text" id="path" placeholder="/path/to/repository"><button onclick="scanPath()">Scan path</button>
+    <div class="m" id="roots" style="font-size:11px;margin-top:6px"></div></div>
+  <div class="card"><b>Upload ZIP</b><input type="file" id="zip" accept=".zip"><button onclick="scanZip()">Upload &amp; scan</button></div>
+  <div id="msg" class="m"></div>
+  <h3>Scan history</h3><div id="hist"></div>
+</aside>
+<main id="main"><div class="empty">No scan selected. Scan a repository path or upload a ZIP to begin.</div></main>
+<script>
+const API='/api/v1';let cur=null,tab='overview',data={},timer=null;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const j=async(u,o)=>{const r=await fetch(API+u,o);if(!r.ok){let d;try{d=(await r.json()).detail}catch{}throw new Error(d||r.statusText)}return r.json()};
+function msg(t,err){$('msg').innerHTML=t?`<span class="${err?'failed':''}">${esc(t)}</span>`:''}
+async function scanPath(){const p=$('path').value.trim();if(!p)return msg('Enter a path',1);const f=new FormData();f.append('path',p);submit(f)}
+async function scanZip(){const z=$('zip').files[0];if(!z)return msg('Choose a ZIP file',1);const f=new FormData();f.append('archive',z);submit(f)}
+async function submit(f){try{msg('Submitting…');const r=await j('/repositories/scan',{method:'POST',body:f});msg('Scan queued');cur=r.id;await loadHist();select(r.id)}catch(e){msg(e.message,1)}}
+async function loadHist(){try{const l=await j('/repositories');$('hist').innerHTML=l.length?l.map(r=>`<div class="hist ${r.id===cur?'sel':''}" onclick="select('${r.id}')"><b>${esc(r.name)}</b> <span class="${r.status}">${r.status}</span><br><span class="m">${esc(r.source_type)} · ${new Date(r.created_at).toLocaleString()}</span>${r.error?`<br><span class="failed">${esc(r.error)}</span>`:''}</div>`).join(''):'<div class="m">No scans yet.</div>'}catch(e){msg(e.message,1)}}
+async function select(id){cur=id;clearTimeout(timer);data={};await loadHist();try{const d=await j('/repositories/'+id);if(d.status==='queued'||d.status==='running'){$('main').innerHTML=`<div class="empty">Scan ${d.status}…</div>`;timer=setTimeout(()=>select(id),1500);return}
+ if(d.status==='failed'){$('main').innerHTML=`<div class="card failed"><b>Scan failed</b><br>${esc(d.error)}</div>`;return}
+ data.detail=d;render()}catch(e){$('main').innerHTML=`<div class="card failed">${esc(e.message)}</div>`}}
+async function lazy(k,u){if(!data[k])data[k]=await j(`/repositories/${cur}/${u}`);return data[k]}
+const TABS=[['overview','Overview'],['stack','Stack'],['tree','Directory'],['deps','Dependencies'],['arch','Architecture'],['health','Health'],['findings','Findings'],['report','Report']];
+function render(){$('main').innerHTML=`<div class="tabs">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()">${l}</button>`).join('')}</div><div id="pane"></div>`;views[tab]().catch(e=>$('pane').innerHTML=`<div class="card failed">${esc(e.message)}</div>`)}
+const empty=t=>`<div class="empty">${esc(t)}</div>`;
+const views={
+async overview(){const d=data.detail,o=d.overview;const st=(k,v)=>`<div class="card"><div class="m">${k}</div><div class="big">${esc(v)}</div></div>`;
+ $('pane').innerHTML=`<div class="grid">${st('Files',o.total_files)}${st('Source',o.source_files)}${st('Tests',o.test_files)}${st('Code lines',o.total_lines)}${st('Components',o.component_count)}${st('Findings',d.findings.length)}</div>
+ <div class="card"><b>${esc(o.name)}</b> · primary language: ${esc(o.primary_language||'unknown')} · monorepo: ${o.monorepo?'yes':'no'} · scanned in ${o.scan.duration_seconds}s ${o.scan.truncated?'<span class="failed">(truncated)</span>':''}</div>
+ <h3>Language distribution</h3>${d.stack.languages.length?d.stack.languages.map(l=>`<div style="margin:6px 0">${esc(l.name)} <span class="m">${l.files} files · ${l.lines} lines · ${l.percent}%</span><div class="bar"><i style="width:${l.percent}%"></i></div></div>`).join(''):empty('No source languages detected.')}
+ <h3>Analysis limitations</h3><div class="card"><ul>${d.limitations.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+ <div class="card m">Report generated from real scan results. Download: <a href="#" onclick="dl('json');return false" style="color:var(--a)">JSON</a> · <a href="#" onclick="dl('markdown');return false" style="color:var(--a)">Markdown</a></div>`},
+async stack(){const s=data.detail.stack;const sec=(t,items,f)=>`<h3>${t}</h3>${items.length?`<div class="card">${items.map(f).join('')}</div>`:empty('None detected from repository evidence.')}`;
+ $('pane').innerHTML=sec('Frameworks & runtimes',s.frameworks,i=>`<div><b>${esc(i.name)}</b> <span class="tag">${esc(i.role)}</span><span class="tag">${esc(i.confidence)}</span> <span class="m">${esc(i.locations[0].path)}${i.locations[0].line?':'+i.locations[0].line:''} · ${esc(i.finding_id)}</span></div>`)
+ +sec('Package managers',s.package_managers,i=>`<div>${esc(i.name)} <span class="m">${esc(i.evidence_path)}</span></div>`)
+ +sec('Infrastructure & CI/CD',s.infrastructure,i=>`<div><b>${esc(i.name)}</b> <span class="m">${esc(i.files.slice(0,3).join(', '))}</span></div>`)
+ +sec('Databases',s.databases,i=>`<div><b>${esc(i.name)}</b> <span class="tag">${esc(i.confidence)}</span> <span class="m">${esc(i.evidence[0].kind)} · ${esc(i.evidence[0].path)}</span></div>`)},
+async tree(){const t=data.detail.tree;const n=(x)=>x.type==='file'?`<div class="file">${esc(x.name)} <span class="m">${esc(x.category)} · ${x.lines} lines</span></div>`:`<details ${x.name===t.name?'open':''}><summary>${esc(x.name)}/ <span class="m">(${x.files})</span></summary>${x.children.map(n).join('')}</details>`;
+ $('pane').innerHTML=`<div class="card">${n(t)}${t.truncated?'<div class="m">Tree truncated for display.</div>':''}</div>`},
+async deps(){const d=await lazy('deps','dependencies');const s=d.summary;const rows=d.dependencies.filter(x=>x.source==='manifest');
+ $('pane').innerHTML=`<div class="card">Direct declarations: <b>${s.direct_declared}</b> · locked entries: <b>${s.locked_entries}</b> · transitive (lockfile): <b>${s.transitive_from_lockfiles}</b> · risky: <b>${s.risky}</b><br><span class="m">Outdated check: ${esc(s.outdated_check)}</span></div>
+ <h3>Manifests</h3><div class="card"><table><tr><th>Path</th><th>Type</th><th>Deps</th><th>Lockfile</th><th>Status</th></tr>${d.manifests.map(m=>`<tr><td>${esc(m.path)}</td><td>${esc(m.type)}</td><td>${m.dependency_count}</td><td>${esc(m.lockfile||(m.lockfile_expected?'missing':'-'))}</td><td class="${m.error?'failed':'done'}">${esc(m.error||'parsed')}</td></tr>`).join('')||''}</table></div>
+ <h3>Dependencies</h3><input type="text" id="df" placeholder="filter by name…" oninput="filt()"><div class="card" id="dt"></div>`;window._rows=rows;filt()},
+async arch(){const a=await lazy('arch','architecture');const g=a.module_graph;
+ $('pane').innerHTML=`<h3>Components</h3>${a.components.length?a.components.map(c=>`<div class="card"><b>${esc(c.name)}</b> <span class="m">${esc(c.path)}</span> <span class="tag">${esc(c.role)} (inferred)</span> ${c.has_dockerfile?'<span class="tag">Dockerfile</span>':''}<br>frameworks: ${esc(c.frameworks.join(', ')||'none recognised')} · ${c.source_files} source files</div>`).join(''):empty('No manifests found; no components detected.')}
+ <h3>Services & relationships</h3>${a.services.length||a.relationships.length?`<div class="card">${a.services.map(s=>`<div>service <b>${esc(s.name)}</b> <span class="m">${esc(s.image||s.build||'')} → depends on: ${esc(s.depends_on.join(', ')||'-')}</span></div>`).join('')}${a.relationships.map(r=>`<div class="m">${esc(r.from)} —${esc(r.type)}→ ${esc(r.to)} <span class="tag">${esc(r.nature)}</span><span class="tag">${esc(r.confidence)}</span></div>`).join('')}</div>`:empty('No compose services or cross-component relationships detected.')}
+ <h3>Module dependency graph <span class="m">(directory-level, from resolved imports; inferred)</span></h3>${g.nodes.length&&g.edges.length?`<div class="card">${graph(g)}</div>`:empty('No internal import relationships resolved.')}
+ <h3>Entry points</h3>${tbl(a.entry_points,['kind','path','line','confidence','snippet'])}
+ <h3>API routes (${a.routes.length})</h3>${tbl(a.routes.slice(0,300),['method','path','file','line','framework'])}
+ <h3>Models & schemas (${a.models.length})</h3>${tbl(a.models.slice(0,300),['name','kind','file','line'])}
+ <h3>Database access</h3>${tbl(a.data_access.slice(0,100),['library','path','line'])}
+ <h3>Test → source links (${a.test_links.length})</h3>${tbl(a.test_links.slice(0,100),['test','source','method','confidence'])}`},
+async health(){const h=await lazy('health','health');
+ $('pane').innerHTML=`<div class="grid">${Object.entries(h.indicators).map(([k,v])=>`<div class="card"><div class="m">${esc(k.replaceAll('_',' '))}</div><div class="big">${esc(v??'n/a')}</div></div>`).join('')}</div><h3>Health & security findings</h3><div class="m">Engineering signals, not proof of defects. Secret values are never shown.</div>${h.findings.length?h.findings.map(fnd).join(''):empty('No health findings produced.')}`},
+async findings(){const f=data.detail.findings;$('pane').innerHTML=`<input type="text" id="ff" placeholder="filter findings (category, text, path)…" oninput="ffilt()"><div id="fl"></div>`;window._f=f;ffilt()},
+async report(){const r=await fetch(`${API}/repositories/${cur}/report?format=markdown`);$('pane').innerHTML=`<div class="card"><button onclick="dl('json')">Download JSON</button> <button class="sec" onclick="dl('markdown')">Download Markdown</button></div><pre>${esc(await r.text())}</pre>`}};
+function tbl(rows,cols){return rows.length?`<div class="card" style="overflow:auto"><table><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</table></div>`:empty('None detected.')}
+function fnd(f){return `<div class="card sev-${esc(f.severity)}"><b>${esc(f.id)}</b> ${esc(f.title)}<br><span class="tag">${esc(f.category)}</span><span class="tag">${esc(f.nature)}</span><span class="tag">conf: ${esc(f.confidence)}</span><span class="tag">${esc(f.method)}</span><span class="m">${esc(f.path||'-')}${f.lines?':'+f.lines.join(','):''}</span><pre>${esc(JSON.stringify(f.evidence,null,1))}</pre></div>`}
+function filt(){const q=($('df')?.value||'').toLowerCase();const r=window._rows.filter(x=>x.name.toLowerCase().includes(q)).slice(0,400);$('dt').innerHTML=r.length?`<table><tr><th>Name</th><th>Spec</th><th>Pinned</th><th>Eco</th><th>Scope</th><th>Evidence</th><th>Risk</th></tr>${r.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.spec)}</td><td>${esc(x.version||'-')}</td><td>${esc(x.ecosystem)}</td><td>${esc(x.scope)}</td><td class="m">${esc(x.manifest)}:${x.line||'?'}</td><td>${esc(x.risk||'')}</td></tr>`).join('')}</table>`:empty('No dependencies match.')}
+function ffilt(){const q=($('ff').value||'').toLowerCase();const r=window._f.filter(f=>(f.category+f.title+(f.path||'')).toLowerCase().includes(q)).slice(0,200);$('fl').innerHTML=r.length?r.map(fnd).join(''):empty('No findings match.')}
+function graph(g){const n=g.nodes.slice(0,24),R=200,cx=260,cy=240,pos={};n.forEach((x,i)=>{const a=2*Math.PI*i/n.length;pos[x.id]=[cx+R*Math.cos(a),cy+R*Math.sin(a)]});
+ const mx=Math.max(...g.edges.map(e=>e.weight));const ls=g.edges.filter(e=>pos[e.from]&&pos[e.to]).map(e=>{const[a,b]=[pos[e.from],pos[e.to]];return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#5b9cff" stroke-opacity=".55" stroke-width="${1+3*e.weight/mx}"><title>${esc(e.from)} → ${esc(e.to)} (${e.weight})</title></line>`}).join('');
+ const ns=n.map(x=>{const[px,py]=pos[x.id];return `<circle cx="${px}" cy="${py}" r="${5+Math.min(10,x.files)}" fill="#3ecf8e"><title>${esc(x.id)} (${x.files} files)</title></circle><text x="${px+10}" y="${py+4}">${esc(x.id)}</text>`}).join('');
+ return `<svg viewBox="0 0 520 480" style="width:100%;max-height:520px">${ls}${ns}</svg>`}
+async function dl(fmt){const r=await fetch(`${API}/repositories/${cur}/report?format=${fmt}`);const b=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`forgex-report.${fmt==='json'?'json':'md'}`;a.click()}
+j('/info').then(i=>$('roots').textContent='Approved roots: '+i.scan_roots.join(', ')).catch(()=>{});loadHist();
+</script></body></html>

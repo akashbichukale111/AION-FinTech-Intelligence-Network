@@ -1,0 +1,75 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AION Autonomous Agentic Commerce & PayPal API",
+    "description": "Production OpenAPI 3.0 specification for the PayPal AI Hackathon 2026. Compatible with APIMatic CodeGen and Postman Import.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Akash Bichukale / AION DevTeam",
+      "url": "https://github.com/akashbichukale111/AEGISNOVA"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local FORGEX & PayPal Orchestration Server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "AURA FinTech Brain Core"
+    }
+  ],
+  "paths": {
+    "/api/paypal": {
+      "get": {
+        "summary": "Get PayPal Sandbox Connection Status and Ledger",
+        "description": "Returns verified OAuth connection status, settlement wallet balance, and recent transaction records.",
+        "responses": {
+          "200": {
+            "description": "PayPal status and ledger retrieved successfully."
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Order, Capture, or Execute Autonomous Agentic Payout",
+        "description": "Supports action types: 'create-order' (Orders v2), 'capture-order', or 'agentic-payout' (Payouts v1 guarded by UNWIND).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": ["create-order", "capture-order", "agentic-payout"]
+                  },
+                  "amount": { "type": "string", "example": "29.99" },
+                  "currency": { "type": "string", "example": "USD" },
+                  "recipientEmail": { "type": "string", "example": "contractor@dev.ai" },
+                  "agentPrompt": { "type": "string", "example": "Disburse $25 to contractor for PR #104" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action executed with PayPal Sandbox."
+          }
+        }
+      }
+    },
+    "/api/paypal/webhook": {
+      "post": {
+        "summary": "Ingest Inbound PayPal Webhooks",
+        "description": "Handles PAYMENT.CAPTURE.COMPLETED, PAYMENT.PAYOUTSBATCH.SUCCESS and records immutable proof into the AG Grid ledger.",
+        "responses": {
+          "200": {
+            "description": "Webhook ingested successfully."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "info": {
+    "name": "AURA — PayPal AI Hackathon Official API Collection",
+    "description": "Production-grade API collection for judges to evaluate the AURA Financial Intelligence & Resolution Platform and its official PayPal Sandbox integration.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "aura_live_api_key_sandbox_2026",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. System & Health",
+      "item": [
+        {
+          "name": "Health Check & Active Modules",
+          "request": {
+            "method": "GET",
+            "url": "http://127.0.0.1:8000/health"
+          }
+        },
+        {
+          "name": "Consolidated Executive Overview KPIs",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/overview/metrics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. PayPal Dedicated Provider Adapter",
+      "item": [
+        {
+          "name": "Get PayPal Connection Status & Health",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/integrations/paypal/status"
+          }
+        },
+        {
+          "name": "Test Server-Side OAuth 2.0 Handshake",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/integrations/paypal/test"
+          }
+        },
+        {
+          "name": "Create PayPal Orders v2 Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-AURA-API-KEY", "value": "{{apiKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 150.00,\n  \"currency\": \"USD\",\n  \"description\": \"AURA Cloud Infrastructure Node Subscription\"\n}"
+            },
+            "url": "{{baseUrl}}/integrations/paypal/checkout/create"
+          }
+        },
+        {
+          "name": "Sync PayPal Transactions into Ledger (Module 01)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/integrations/paypal/sync"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Cross-Module Autonomous Workflows",
+      "item": [
+        {
+          "name": "Execute All 9 End-to-End Financial Workflows",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/workflows/execute-all"
+          }
+        },
+        {
+          "name": "Trigger Autonomous 3-Way Reconciliation (Workflow 2)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/reconciliation/runs/trigger"
+          }
+        },
+        {
+          "name": "Trigger Fraud Velocity & Anomaly Risk Engine (Workflow 3)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/risk/evaluate"
+          }
+        },
+        {
+          "name": "Refresh Multi-Account Treasury Balance & Runway (Workflow 4)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/treasury/refresh"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Resolution, Governance & Copilot",
+      "item": [
+        {
+          "name": "Auto-Package Dispute Evidence (Workflow 5)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/disputes/disp_case_pp_001/enrich"
+          }
+        },
+        {
+          "name": "Submit Refund with Dispute Shield Validation (Workflow 6)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-AURA-API-KEY", "value": "{{apiKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capture_id\": \"pp_tx_6619284733\",\n  \"amount\": 350.00,\n  \"reason\": \"Partial downgrade request\"\n}"
+            },
+            "url": "{{baseUrl}}/refunds/request"
+          }
+        },
+        {
+          "name": "Chat with AURA Financial Copilot (Module 10 + AI)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "X-AURA-API-KEY", "value": "{{apiKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What is our total PayPal settled volume and current treasury cash runway?\"\n}"
+            },
+            "url": "{{baseUrl}}/copilot/chat"
+          }
+        },
+        {
+          "name": "Get Daily Executive Financial Briefing (Workflow 9)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "X-AURA-API-KEY", "value": "{{apiKey}}"}],
+            "url": "{{baseUrl}}/copilot/briefing/daily"
+          }
+        }
+      ]
+    }
+  ]
+}

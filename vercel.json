@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd AION-Main-Platform && npm install && npm run build",
+  "outputDirectory": "AION-Main-Platform/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
