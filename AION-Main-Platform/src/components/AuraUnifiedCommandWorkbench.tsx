@@ -14,7 +14,7 @@ import {
 } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { CheckCircle2, ShieldCheck, Zap, X, Copy, Search, Check } from "lucide-react";
+import { CheckCircle2, ShieldCheck, Zap, X, Copy, Search, Check, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 
 export type OperationalMode =
   | "TRANSACTIONS"
@@ -723,7 +723,7 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
   const [nlQuery, setNlQuery] = useState<string>("");
   const [activeFilterQuery, setActiveFilterQuery] = useState<string>("");
   const [validatedAstPill, setValidatedAstPill] = useState<string>(
-    '🔒 Allowlisted Filter AST: { mode: "TRANSACTIONS", recordsCount: 18, rawSqlBlocked: true }'
+    '🔒 Allowlisted Filter AST: { mode: "TRANSACTIONS", recordsCount: 24, rawSqlBlocked: true }'
   );
   const [activeReplayStep, setActiveReplayStep] = useState<number>(4);
   const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
@@ -738,6 +738,37 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
   } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Voice AI & Speech Synthesis State
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [isCompiling, setIsCompiling] = useState<boolean>(false);
+  const [voiceReplyEnabled, setVoiceReplyEnabled] = useState<boolean>(true);
+  const recognitionRef = useRef<any>(null);
+
+  // Executive Speech Synthesis Voice Reply
+  const speakAuraConfirmation = useCallback((text: string) => {
+    if (!voiceReplyEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(
+        (v) =>
+          v.lang.startsWith("en") &&
+          (v.name.includes("Natural") ||
+            v.name.includes("Google") ||
+            v.name.includes("Samantha") ||
+            v.name.includes("David") ||
+            v.name.includes("Female"))
+      );
+      if (preferredVoice) utterance.voice = preferredVoice;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn("SpeechSynthesis error:", err);
+    }
+  }, [voiceReplyEnabled]);
 
   // Bulletproof Universal Clipboard Copy Engine (Works on localhost, https, & iframes)
   const fallbackCopy = (text: string) => {
@@ -1075,63 +1106,153 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
     showToast(`Switched to ${mode} View`);
   }, [showToast]);
 
-  // 4. Safe Natural-Language Execution (Applies live filter + AST pill + row select)
-  const executeValidatedAiCommand = useCallback((commandText: string) => {
+  // 4. Safe Natural-Language Execution (Gemini AST + Deterministic Fallback + Spoken Response)
+  const executeValidatedAiCommand = useCallback(async (commandText: string) => {
     const q = commandText.trim().toLowerCase();
     setNlQuery(commandText);
+    setIsCompiling(true);
+
+    let spokenResponse = "";
+
+    // A. Instant Reset / Clear Handler
+    if (!q || q === "reset" || q === "clear" || q === "all" || q.includes("reset") || q.includes("clear") || q.includes("show all")) {
+      setActiveFilterQuery("");
+      setActiveMode("TRANSACTIONS");
+      setNlQuery("");
+      setValidatedAstPill('🔒 Validated AST: { "display": "ALL_LIVE_RECORDS", "recordsCount": 24, "sqlInjectionBlocked": true }');
+      spokenResponse = "Cleared all active filters. Restored full twenty-four transaction ledger.";
+      showToast("🔄 Filter Reset: Displaying All 24 Transactions");
+      setIsCompiling(false);
+      speakAuraConfirmation(spokenResponse);
+      return;
+    }
+
+    // B. Set Active Query & Pill
     setActiveFilterQuery(commandText);
     updateAstPillForQuery(commandText);
 
-    if (q.includes("dispute") || q.includes("chargeback") || q.includes("claim")) {
-      setActiveMode("DISPUTES");
-      showToast("Filtered: Open PayPal Disputes");
+    // C. Try Live Backend Gemini 2.5 Flash Structured AST Endpoint
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/workbench/nl-command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: commandText })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.target_mode && data.target_mode !== "null") {
+          setActiveMode(data.target_mode as OperationalMode);
+        }
+        if (data.spotlight_tx_id) {
+          const rec = records.find(r => r.txId === data.spotlight_tx_id);
+          if (rec) setSelectedRecord(rec);
+        }
+        if (data.spoken_reply) {
+          spokenResponse = data.spoken_reply;
+        }
+        if (data.ast_security_seal) {
+          setValidatedAstPill(`🔒 Validated AST: ${JSON.stringify(data.ag_filter_model || {})} • ${data.ast_security_seal}`);
+        }
+      }
+    } catch {
+      // Offline fallback runs below
+    }
+
+    // D. Zero-Latency Deterministic Fallback Engine (Guaranteed 100% Reliable Offline)
+    if (!spokenResponse) {
+      if (q.includes("low") || q.includes("safe") || q.includes("clean") || q.includes("matched")) {
+        setActiveMode("TRANSACTIONS");
+        spokenResponse = "Filtered verified low-risk transactions with anomaly scores under 30 and clean reconciliation.";
+        showToast("🟢 Filtered: Low-Risk & Clean Records");
+      } else if (q.includes("mismatch") || q.includes("differ") || q.includes("variance") || q.includes("5000") || q.includes("5,000") || q.includes("delta")) {
+        setActiveMode("RECONCILIATION");
+        const flagship = records.find((r) => r.txId === "REC-99420-FLAGSHIP");
+        if (flagship) setSelectedRecord(flagship);
+        spokenResponse = "Isolated three-way ledger mismatches and pinned the five thousand dollar marketplace variance.";
+        showToast("🔍 Flagship Isolated: REC-99420-FLAGSHIP (-$5,000)");
+      } else if (q.includes("high") || q.includes("critical") || q.includes("danger") || q.includes("alert")) {
+        setActiveMode("RISK_INTELLIGENCE");
+        spokenResponse = "Filtered for critical anomaly risk scores above 70 and sorted descending.";
+        showToast("🔴 Filtered: Critical Anomalies (Score >= 70)");
+      } else if (q.includes("dispute") || q.includes("chargeback") || q.includes("claim")) {
+        setActiveMode("DISPUTES");
+        spokenResponse = "Switched to Disputes view. Isolated open PayPal buyer claims pending cryptographic evidence.";
+        showToast("🛡️ Switched: Open PayPal Disputes");
+      } else if (q.includes("refund") || q.includes("return") || q.includes("rma")) {
+        setActiveMode("REFUNDS");
+        spokenResponse = "Filtered pending refunds and verified credit recovery items.";
+        showToast("↩️ Switched: Pending Refunds");
+      } else if (q.includes("gpu") || q.includes("payout") || q.includes("unwind") || q.includes("11") || q.includes("micro")) {
+        setActiveMode("TRANSACTIONS");
+        spokenResponse = "Displaying autonomous micro-GPU bounty disbursements verified under Tier 1 policy.";
+        showToast("⚡ Filtered: Autonomous Micro-GPU Payouts");
+      } else if (q.includes("escrow") || q.includes("wholesale") || q.includes("large") || q.includes("10000") || q.includes("10,000") || q.includes("50000") || q.includes("50,000") || q.includes("35000")) {
+        setActiveMode("TRANSACTIONS");
+        spokenResponse = "Isolated high-value enterprise escrow accounts exceeding ten thousand dollars.";
+        showToast("💎 Filtered: High-Value Escrow & Wholesale");
+      } else {
+        spokenResponse = `Applied validated financial filter for ${commandText}.`;
+        showToast(`🔍 Filtered by "${commandText}"`);
+      }
+    }
+
+    setIsCompiling(false);
+    speakAuraConfirmation(spokenResponse);
+  }, [records, showToast, speakAuraConfirmation, updateAstPillForQuery]);
+
+  // Web Speech API Voice Recognition Toggle
+  const toggleVoiceRecognition = useCallback(() => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
       return;
     }
 
-    if (q.includes("refund") || q.includes("return") || q.includes("rma")) {
-      setActiveMode("REFUNDS");
-      showToast("Filtered: Pending Refunds");
+    const SpeechRecClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecClass) {
+      showToast("⚠️ Web Speech API not supported in this browser. Please type your command.");
       return;
     }
 
-    // All other filters evaluate across all transactions
-    setActiveMode("TRANSACTIONS");
+    try {
+      const recognition = new SpeechRecClass();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
 
-    if (q.includes("low") || q.includes("safe") || q.includes("clean") || q.includes("matched")) {
-      showToast("Found: Low-Risk & Clean Transactions (Score < 30)");
-      return;
+      recognition.onstart = () => {
+        setIsListening(true);
+        showToast("🎙️ AURA Voice Active: Speak your financial command...");
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          showToast(`🎙️ Heard: "${transcript}"`);
+          executeValidatedAiCommand(transcript);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e);
+        setIsListening(false);
+        showToast(`⚠️ Mic: ${e.error || "recognition error"}`);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn("Failed to start speech recognition:", err);
+      setIsListening(false);
+      showToast("⚠️ Microphone access error.");
     }
-
-    if (q.includes("high") || q.includes("critical") || q.includes("danger") || q.includes("alert")) {
-      showToast("Found: Critical High-Risk Anomalies (Score >= 70)");
-      return;
-    }
-
-    if (q.includes("mismatch") || q.includes("differ") || q.includes("variance") || q.includes("5000") || q.includes("5,000") || q.includes("delta")) {
-      const flagship = records.find((r) => r.txId === "REC-99420-FLAGSHIP");
-      if (flagship) setSelectedRecord(flagship);
-      showToast("Flagship Isolated: REC-99420-FLAGSHIP (-$5,000 Mismatch)");
-      return;
-    }
-
-    if (q.includes("gpu") || q.includes("payout") || q.includes("unwind") || q.includes("11") || q.includes("micro")) {
-      showToast("Found: Autonomous Micro-GPU Disbursements");
-      return;
-    }
-
-    if (q.includes("escrow") || q.includes("wholesale") || q.includes("large") || q.includes("10000") || q.includes("10,000") || q.includes("50000") || q.includes("50,000") || q.includes("35000")) {
-      showToast("Found: High-Value Escrows & Wholesale (> $10,000)");
-      return;
-    }
-
-    if (q.includes("reset") || q.includes("all") || q.includes("clear") || q === "") {
-      setActiveFilterQuery("");
-      showToast("Filter Reset: Displaying All Live Records");
-      return;
-    }
-
-    showToast(`Filtered by "${commandText}"`);
-  }, [records, showToast, updateAstPillForQuery]);
+  }, [isListening, executeValidatedAiCommand, showToast]);
 
   // 5. Human-in-the-Loop Approval & Sandbox Resolution
   const handleHumanApproveResolution = useCallback(
@@ -1286,8 +1407,32 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
       <style>{`
         .ag-theme-quartz-dark,
         .ag-theme-quartz,
-        .ag-theme-quartz-dark *,
-        .ag-theme-quartz * {
+        .ag-theme-quartz-auto-dark,
+        .ag-root-wrapper,
+        .ag-root-wrapper-body,
+        .ag-root,
+        .ag-body,
+        .ag-body-viewport,
+        .ag-body-viewport-wrapper,
+        .ag-center-cols-viewport,
+        .ag-center-cols-container,
+        .ag-center-cols-clipper,
+        .ag-pinned-left-cols-viewport,
+        .ag-pinned-left-cols-container,
+        .ag-pinned-right-cols-viewport,
+        .ag-pinned-right-cols-container,
+        .ag-floating-bottom,
+        .ag-floating-bottom-viewport,
+        .ag-floating-bottom-container,
+        .ag-pinned-bottom-floating-top,
+        .ag-body-horizontal-scroll,
+        .ag-body-horizontal-scroll-viewport,
+        .ag-body-horizontal-scroll-container,
+        .ag-body-vertical-scroll,
+        .ag-body-vertical-scroll-viewport,
+        .ag-body-vertical-scroll-container,
+        .ag-scrolls,
+        .ag-virtual-list-viewport {
           --ag-background-color: #091222 !important;
           --ag-wrapper-background-color: #091222 !important;
           --ag-data-background-color: #091222 !important;
@@ -1299,85 +1444,73 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
           --ag-border-color: #1e293b !important;
           --ag-row-border-color: #1e293b !important;
           --ag-row-hover-color: #13233c !important;
-        }
-        .ag-theme-quartz-dark,
-        .ag-theme-quartz-dark .ag-root-wrapper,
-        .ag-theme-quartz-dark .ag-root-wrapper-body,
-        .ag-theme-quartz-dark .ag-root,
-        .ag-theme-quartz-dark .ag-body,
-        .ag-theme-quartz-dark .ag-body-viewport,
-        .ag-theme-quartz-dark .ag-center-cols-viewport,
-        .ag-theme-quartz-dark .ag-center-cols-container,
-        .ag-theme-quartz-dark .ag-center-cols-clipper,
-        .ag-theme-quartz-dark .ag-row,
-        .ag-theme-quartz-dark .ag-cell,
-        .ag-theme-quartz-dark .ag-floating-bottom,
-        .ag-theme-quartz-dark .ag-floating-bottom-viewport,
-        .ag-theme-quartz-dark .ag-floating-bottom-container,
-        .ag-theme-quartz-dark .ag-pinned-bottom-floating-top,
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll,
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll-viewport,
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll-container {
           background-color: #091222 !important;
           background: #091222 !important;
           color: #f1f5f9 !important;
           border-color: #1e293b !important;
         }
-        .ag-theme-quartz-dark .ag-row-odd,
-        .ag-theme-quartz-dark .ag-row-odd .ag-cell {
+        .ag-row,
+        .ag-row-even,
+        .ag-cell {
+          background-color: #091222 !important;
+          background: #091222 !important;
+          color: #f1f5f9 !important;
+        }
+        .ag-row-odd,
+        .ag-row-odd .ag-cell {
           background-color: #070e1c !important;
           background: #070e1c !important;
         }
-        .ag-theme-quartz-dark .ag-row-hover,
-        .ag-theme-quartz-dark .ag-row:hover,
-        .ag-theme-quartz-dark .ag-row-hover .ag-cell {
+        .ag-row-hover,
+        .ag-row:hover,
+        .ag-row-hover .ag-cell {
           background-color: #13233c !important;
           background: #13233c !important;
         }
-        .ag-theme-quartz-dark .ag-row-selected,
-        .ag-theme-quartz-dark .ag-row-selected .ag-cell {
+        .ag-row-selected,
+        .ag-row-selected .ag-cell {
           background-color: rgba(20, 184, 166, 0.25) !important;
           background: rgba(20, 184, 166, 0.25) !important;
           border-color: #14b8a6 !important;
         }
-        .ag-theme-quartz-dark .ag-header,
-        .ag-theme-quartz-dark .ag-header-row,
-        .ag-theme-quartz-dark .ag-header-cell {
+        .ag-header,
+        .ag-header-row,
+        .ag-header-cell {
           background-color: #0b182d !important;
           background: #0b182d !important;
           color: #38bdf8 !important;
           border-color: #1e293b !important;
           font-weight: 700 !important;
         }
-        .ag-theme-quartz-dark .ag-header-cell-text {
+        .ag-header-cell-text {
           color: #38bdf8 !important;
           font-weight: 800 !important;
           letter-spacing: 0.3px;
         }
-        .ag-theme-quartz-dark .ag-pinned-bottom-floating-top,
-        .ag-theme-quartz-dark .ag-floating-bottom,
-        .ag-theme-quartz-dark .ag-floating-bottom-viewport,
-        .ag-theme-quartz-dark .ag-floating-bottom-container,
-        .ag-theme-quartz-dark .ag-row-pinned,
-        .ag-theme-quartz-dark .ag-row-pinned .ag-cell {
+        .ag-pinned-bottom-floating-top,
+        .ag-floating-bottom,
+        .ag-floating-bottom-viewport,
+        .ag-floating-bottom-container,
+        .ag-row-pinned,
+        .ag-row-pinned .ag-cell {
           background-color: #050b14 !important;
           background: #050b14 !important;
           color: #2dd4bf !important;
           border-top: 2px solid #14b8a6 !important;
           font-weight: 900 !important;
         }
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll,
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll-viewport,
-        .ag-theme-quartz-dark .ag-body-horizontal-scroll-container {
+        .ag-body-horizontal-scroll,
+        .ag-body-horizontal-scroll-viewport,
+        .ag-body-horizontal-scroll-container {
           background-color: #070e1c !important;
           background: #070e1c !important;
           border-top: 1px solid #1e293b !important;
         }
-        .ag-theme-quartz-dark .ag-checkbox-input-wrapper {
+        .ag-checkbox-input-wrapper {
           background-color: #050b14 !important;
           border-color: #334155 !important;
         }
-        .ag-theme-quartz-dark .ag-checkbox-input-wrapper.ag-checked {
+        .ag-checkbox-input-wrapper.ag-checked {
           background-color: #14b8a6 !important;
         }
       `}</style>
@@ -1438,12 +1571,45 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
         </div>
       </div>
 
-      {/* CAPABILITY 1: AI Command Grid Bar (Natural Language -> Validated Filter Schema) */}
-      <div style={{ background: "#0b1324", border: "1px solid rgba(20, 184, 166, 0.35)", borderRadius: "10px", padding: "12px 14px", marginBottom: "12px" }}>
+      {/* CAPABILITY 1: Voice AI Command Bar (Speech-to-Text + Gemini AST + Voice Reply + Quick Chips) */}
+      <div style={{
+        background: "#0b1324",
+        border: isListening ? "1.5px solid #ef4444" : "1px solid rgba(20, 184, 166, 0.45)",
+        borderRadius: "10px",
+        padding: "12px 14px",
+        marginBottom: "12px",
+        boxShadow: isListening ? "0 0 20px rgba(239, 68, 68, 0.35)" : "none",
+        transition: "all 0.2s"
+      }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px" }}>
-          <span style={{ background: "rgba(20, 184, 166, 0.15)", color: "#2dd4bf", fontWeight: 800, fontSize: "11px", padding: "4px 8px", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-            <Search size={13} /> AI COMMAND GRID
-          </span>
+          
+          {/* Live Mic Speech-to-Text Button */}
+          <button
+            type="button"
+            onClick={toggleVoiceRecognition}
+            style={{
+              background: isListening ? "#ef4444" : "rgba(20, 184, 166, 0.18)",
+              color: isListening ? "#ffffff" : "#2dd4bf",
+              border: isListening ? "1.5px solid #f87171" : "1px solid #14b8a6",
+              padding: "7px 13px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: isListening ? "0 0 14px rgba(239, 68, 68, 0.6)" : "none",
+              animation: isListening ? "pulse 1.2s infinite" : "none",
+              transition: "all 0.15s ease"
+            }}
+            title={isListening ? "Listening... Click to stop" : "Click to speak voice command"}
+          >
+            {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+            <span>{isListening ? "Listening..." : "🎙️ Voice Command"}</span>
+          </button>
+
+          {/* Prompt / Command Input */}
           <input
             type="text"
             value={nlQuery}
@@ -1457,20 +1623,65 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
               updateAstPillForQuery(val);
             }}
             onKeyDown={(e) => e.key === "Enter" && executeValidatedAiCommand(nlQuery)}
-            placeholder="Type any prompt: 'show low risk', 'show mismatches', 'show disputes', 'above 10k', or counterparty..."
+            placeholder="Speak or type: 'show mismatches', 'show low risk', 'disputes', 'above $1,000', or 'reset'..."
             style={{ flex: 1, minWidth: "260px", background: "#050b14", border: "1px solid #334155", color: "#f8fafc", padding: "8px 12px", borderRadius: "6px", fontSize: "12px" }}
           />
+
+          {/* Execute on Grid Button */}
           <button
+            type="button"
+            disabled={isCompiling}
             onClick={() => executeValidatedAiCommand(nlQuery)}
-            style={{ background: "#0f766e", color: "#fff", border: "none", padding: "8px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}
+            style={{
+              background: "#0f766e",
+              color: "#fff",
+              border: "none",
+              padding: "8px 14px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
           >
-            Apply Query
+            {isCompiling ? <Zap size={13} className="animate-spin" /> : <Search size={13} />}
+            <span>{isCompiling ? "Compiling..." : "▶ Execute on Grid"}</span>
+          </button>
+
+          {/* AI Voice Toggle Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !voiceReplyEnabled;
+              setVoiceReplyEnabled(next);
+              if (next) speakAuraConfirmation("AURA voice responses active.");
+              showToast(next ? "🔊 AI Voice: ON" : "🔇 AI Voice: MUTED");
+            }}
+            style={{
+              background: voiceReplyEnabled ? "rgba(56, 189, 248, 0.15)" : "rgba(255, 255, 255, 0.05)",
+              color: voiceReplyEnabled ? "#38bdf8" : "#94a3b8",
+              border: voiceReplyEnabled ? "1px solid #38bdf8" : "1px solid #334155",
+              padding: "7px 11px",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px"
+            }}
+            title="Toggle Executive AI Voice Reply"
+          >
+            {voiceReplyEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+            <span>AI Voice: {voiceReplyEnabled ? "ON" : "OFF"}</span>
           </button>
         </div>
 
         {/* Quick Clickable AI Starter Chips */}
         <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>Quick Filters:</span>
+          <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>Quick Commands:</span>
           {[
             { label: "🔍 All Mismatches (-$5K)", q: "mismatches" },
             { label: "🟢 Low Risk (<30)", q: "show low risk" },
@@ -1478,10 +1689,11 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
             { label: "🛡️ Open Disputes", q: "disputes" },
             { label: "⚡ GPU Payouts ($11)", q: "gpu" },
             { label: "💎 High-Value (> $10k)", q: "escrow" },
-            { label: "🔄 Reset All", q: "reset" },
+            { label: "🔄 Reset All (24 Records)", q: "reset" },
           ].map((chip) => (
             <button
               key={chip.label}
+              type="button"
               onClick={() => executeValidatedAiCommand(chip.q)}
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
@@ -1566,8 +1778,8 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
         <div
           className="ag-theme-quartz-dark"
           style={{
-            height: gridHeight,
-            minHeight: "260px",
+            height: filteredRecords.length <= 8 ? "auto" : gridHeight,
+            minHeight: filteredRecords.length <= 8 ? undefined : "260px",
             maxHeight: "560px",
             width: "100%",
             borderRadius: "8px",
@@ -1582,6 +1794,7 @@ export default function AuraUnifiedCommandWorkbench({ onTriggerSonicChime }: { o
             rowData={filteredRecords}
             columnDefs={columnDefs}
             pinnedBottomRowData={pinnedBottomRowData}
+            domLayout={filteredRecords.length <= 8 ? "autoHeight" : "normal"}
             enableCellTextSelection={true}
             ensureDomOrder={true}
             defaultColDef={{

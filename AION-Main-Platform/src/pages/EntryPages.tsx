@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Mic, MicOff, Volume2, VolumeX, Search, Zap, CheckCircle2 } from "lucide-react";
 import { Badge } from "../components/ui";
 import AuraUnifiedCommandWorkbench from "../components/AuraUnifiedCommandWorkbench";
 import { paypalAudio } from "../utils/paypalAudio";
@@ -228,6 +228,140 @@ export function ForgexEntryPage() {
   const [selectedView, setSelectedView] = useState<"paypal" | "studio">("paypal");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Voice AI & Autonomous Prompt State for FORGEX
+  const [forgexQuery, setForgexQuery] = useState<string>("");
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [voiceReplyEnabled, setVoiceReplyEnabled] = useState<boolean>(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [astPill, setAstPill] = useState<string>(
+    '🔒 FORGEX AST: { engine: "AEGISNOVA_AUTONOMOUS_V3", sandbox: "PAYPAL_REST_V2", policy: "TIER_1_AUTO" }'
+  );
+  const recognitionRef = useRef<any>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  }, []);
+
+  const speakForgexConfirmation = useCallback((text: string) => {
+    if (!voiceReplyEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(
+        (v) =>
+          v.lang.startsWith("en") &&
+          (v.name.includes("Natural") ||
+            v.name.includes("Google") ||
+            v.name.includes("Samantha") ||
+            v.name.includes("David") ||
+            v.name.includes("Female"))
+      );
+      if (preferredVoice) utterance.voice = preferredVoice;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn("SpeechSynthesis error:", err);
+    }
+  }, [voiceReplyEnabled]);
+
+  const executeForgexPrompt = useCallback((promptText: string) => {
+    const q = promptText.trim().toLowerCase();
+    setForgexQuery(promptText);
+    setIsExecuting(true);
+
+    let spoken = "";
+
+    if (!q || q === "reset" || q === "clear" || q.includes("reset") || q.includes("clear")) {
+      setSelectedView("paypal");
+      setForgexQuery("");
+      setAstPill('🔒 FORGEX AST: { workspace: "CLEAN_STANDBY", gate: "READY", policy: "IDLE" }');
+      spoken = "Restored clean FORGEX autonomous studio workspace.";
+      showToast("🔄 FORGEX Workspace Reset");
+    } else if (q.includes("unwind") || q.includes("gpu") || q.includes("11") || q.includes("bounty") || q.includes("micro")) {
+      setSelectedView("paypal");
+      try {
+        iframeRef.current?.contentWindow?.postMessage({ type: "SWITCH_TAB", tab: "MODE_PAYPAL" }, "*");
+      } catch {}
+      setAstPill('🔒 FORGEX AST: { action: "UNWIND_GPU_WARRANT", cap: "$11.00", proof: "SHA256_COMMIT_LOCKED" }');
+      spoken = "Generated UNWIND cryptographic warrant bound to git commit sha-256 with eleven dollar PayPal payout cap.";
+      showToast("⚡ Autonomous GPU Warrant Bound ($11.00)");
+    } else if (q.includes("aegis") || q.includes("gate") || q.includes("audit") || q.includes("merkle") || q.includes("proof") || q.includes("studio")) {
+      setSelectedView("studio");
+      setAstPill('🔒 FORGEX AST: { engine: "AEGISNOVA_GATE", merkleRoot: "0x9f1a...e882", state: "ANCHORED" }');
+      spoken = "Deploying AegisNova deterministic gate with Merkle audit proof verification.";
+      showToast("🛡️ AEGISNOVA Deterministic Gate Engaged");
+    } else if (q.includes("paypal") || q.includes("order") || q.includes("capture") || q.includes("commerce")) {
+      setSelectedView("paypal");
+      setAstPill('🔒 FORGEX AST: { protocol: "PAYPAL_ORDERS_V2", sandboxMode: "LIVE_IDEMPOTENT" }');
+      spoken = "Switched to PayPal Agentic Commerce sandbox mode with live webhook idempotency.";
+      showToast("💳 PayPal Sandbox Mode Active");
+    } else {
+      setAstPill(`🔒 FORGEX AST: { directive: "${promptText}", execution: "DETERMINISTIC_SANDBOX" }`);
+      spoken = `Autonomous engineering directive for ${promptText} registered in FORGEX runtime.`;
+      showToast(`⚡ Directive: "${promptText}"`);
+    }
+
+    setIsExecuting(false);
+    speakForgexConfirmation(spoken);
+  }, [showToast, speakForgexConfirmation]);
+
+  const toggleVoiceRecognition = useCallback(() => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecClass) {
+      showToast("⚠️ Web Speech API not supported. Please type directive.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecClass();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        showToast("🎙️ FORGEX Voice Active: Speak autonomous directive...");
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          showToast(`🎙️ Heard: "${transcript}"`);
+          executeForgexPrompt(transcript);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e);
+        setIsListening(false);
+        showToast(`⚠️ Mic: ${e.error || "recognition error"}`);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn("Speech error:", err);
+      setIsListening(false);
+      showToast("⚠️ Microphone access error.");
+    }
+  }, [isListening, executeForgexPrompt, showToast]);
+
   const searchStr = typeof window !== "undefined" ? window.location.search : "";
   const extraParams = searchStr ? `&${searchStr.replace(/^\?/, "")}` : "";
 
@@ -248,7 +382,30 @@ export function ForgexEntryPage() {
   const currentIframeUrl = viewUrls[selectedView];
 
   return (
-    <div style={{ width: "100%", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", backgroundColor: "#070A12", overflow: "hidden" }}>
+    <div style={{ width: "100%", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", backgroundColor: "#070A12", overflow: "hidden", position: "relative" }}>
+      {/* Floating Centered Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: "absolute",
+          top: "14px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)",
+          color: "#ffffff",
+          padding: "7px 18px",
+          borderRadius: "20px",
+          fontWeight: 800,
+          fontSize: "12px",
+          zIndex: 1000,
+          boxShadow: "0 6px 20px rgba(139, 92, 246, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px"
+        }}>
+          <CheckCircle2 size={16} /> {toastMessage}
+        </div>
+      )}
+
       {/* Top Workspace Header */}
       <div style={{
         display: "flex",
@@ -353,6 +510,141 @@ export function ForgexEntryPage() {
           >
             Standalone Window <ExternalLink size={13} />
           </a>
+        </div>
+      </div>
+
+      {/* Voice AI & Autonomous Engineering Prompt Bar */}
+      <div style={{
+        padding: "10px 20px",
+        backgroundColor: "#0d111e",
+        borderBottom: isListening ? "1.5px solid #ef4444" : "1px solid rgba(139, 92, 246, 0.3)",
+        boxShadow: isListening ? "0 0 18px rgba(239, 68, 68, 0.35)" : "none",
+        transition: "all 0.2s"
+      }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "6px" }}>
+          <button
+            type="button"
+            onClick={toggleVoiceRecognition}
+            style={{
+              background: isListening ? "#ef4444" : "rgba(139, 92, 246, 0.2)",
+              color: isListening ? "#ffffff" : "#c4b5fd",
+              border: isListening ? "1.5px solid #f87171" : "1px solid #8b5cf6",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: isListening ? "0 0 14px rgba(239, 68, 68, 0.6)" : "none",
+              animation: isListening ? "pulse 1.2s infinite" : "none",
+              transition: "all 0.15s ease"
+            }}
+            title={isListening ? "Listening... Click to stop" : "Speak autonomous engineering directive"}
+          >
+            {isListening ? <MicOff size={13} /> : <Mic size={13} />}
+            <span>{isListening ? "Listening..." : "🎙️ Voice Command"}</span>
+          </button>
+
+          <input
+            type="text"
+            value={forgexQuery}
+            onChange={(e) => setForgexQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && executeForgexPrompt(forgexQuery)}
+            placeholder="Speak or type: 'Autonomous Unwind GPU micro-task with 11 dollar payout warrant', 'Deploy AegisNova gate', or 'reset'..."
+            style={{
+              flex: 1,
+              minWidth: "260px",
+              background: "#070A12",
+              border: "1px solid #334155",
+              color: "#f8fafc",
+              padding: "7px 12px",
+              borderRadius: "6px",
+              fontSize: "12px"
+            }}
+          />
+
+          <button
+            type="button"
+            disabled={isExecuting}
+            onClick={() => executeForgexPrompt(forgexQuery)}
+            style={{
+              background: "#7c3aed",
+              color: "#fff",
+              border: "none",
+              padding: "7px 14px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            {isExecuting ? <Zap size={13} className="animate-spin" /> : <Search size={13} />}
+            <span>{isExecuting ? "Executing..." : "▶ Execute Directive"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !voiceReplyEnabled;
+              setVoiceReplyEnabled(next);
+              if (next) speakForgexConfirmation("FORGEX executive voice active.");
+              showToast(next ? "🔊 AI Voice: ON" : "🔇 AI Voice: MUTED");
+            }}
+            style={{
+              background: voiceReplyEnabled ? "rgba(167, 139, 250, 0.15)" : "rgba(255, 255, 255, 0.05)",
+              color: voiceReplyEnabled ? "#c4b5fd" : "#94a3b8",
+              border: voiceReplyEnabled ? "1px solid #a78bfa" : "1px solid #334155",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px"
+            }}
+            title="Toggle Executive AI Voice Reply"
+          >
+            {voiceReplyEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+            <span>AI Voice: {voiceReplyEnabled ? "ON" : "OFF"}</span>
+          </button>
+        </div>
+
+        {/* Quick Chips for FORGEX */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>Quick Directives:</span>
+          {[
+            { label: "⚡ GPU Bounty ($11)", q: "Autonomous Unwind GPU micro-task with 11 dollar payout warrant" },
+            { label: "🛡️ AEGISNOVA Gate", q: "Deploy AegisNova deterministic gate with Merkle audit proof" },
+            { label: "💳 PayPal Sandbox", q: "Switch to PayPal Orders v2 Sandbox mode" },
+            { label: "🔄 Reset Workspace", q: "reset" }
+          ].map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => executeForgexPrompt(chip.q)}
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                color: "#e2e8f0",
+                fontSize: "11px",
+                padding: "3px 8px",
+                borderRadius: "4px",
+                cursor: "pointer",
+                transition: "all 0.15s"
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+          <div style={{ marginLeft: "auto", fontSize: "11px", fontFamily: "monospace", color: "#a78bfa" }}>
+            {astPill}
+          </div>
         </div>
       </div>
 

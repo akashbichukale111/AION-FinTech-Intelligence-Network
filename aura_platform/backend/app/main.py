@@ -149,3 +149,139 @@ if os.path.exists(frontend_dir):
         if os.path.exists(index_file):
             return FileResponse(index_file)
         return {"message": "AURA Backend is running. Frontend index.html not yet built."}
+
+
+# =============================================================================
+# GEMINI 2.5 FLASH + DETERMINISTIC NATURAL LANGUAGE AST COMPILER ENDPOINT
+# =============================================================================
+import re
+import json
+from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
+
+class NLGridCommandRequest(BaseModel):
+    query: str
+
+class NLGridCommandResponse(BaseModel):
+    intent_summary: str
+    spoken_reply: str
+    target_mode: Optional[str] = None
+    ag_filter_model: Dict[str, Any]
+    column_state: List[Dict[str, Any]]
+    spotlight_tx_id: Optional[str] = None
+    ast_security_seal: str
+
+# Strict Allowlisted Fields (Prevents Prompt-Injection / Arbitrary Code Execution)
+ALLOWLISTED_COLUMNS = {"txId", "counterparty", "paypalAmount", "orderAmount", "ledgerAmount", "delta", "riskScore", "status", "ruleCode"}
+
+@app.post("/api/v1/workbench/nl-command", response_model=NLGridCommandResponse, tags=["AI Command AST"])
+async def parse_nl_to_ag_grid_ast(req: NLGridCommandRequest):
+    q_raw = req.query.strip()
+    q = q_raw.lower()
+    gemini_key = os.getenv("GEMINI_API_KEY")
+
+    # 1. Try Live Gemini 2.5 Flash with Strict JSON Schema if API Key is configured
+    if gemini_key:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            system_prompt = f"""
+            You are AURA's Deterministic AG Grid AST Compiler.
+            Convert the user's financial command into a strict JSON object controlling AG Grid Community v31.
+            Allowed columns: {list(ALLOWLISTED_COLUMNS)}.
+            Allowed modes: ["TRANSACTIONS", "RECONCILIATION", "RISK_INTELLIGENCE", "DISPUTES", "REFUNDS", "AUDIT_TRAIL"].
+            Return ONLY valid JSON with keys:
+            - intent_summary (string)
+            - spoken_reply (concise 1-sentence executive voice response)
+            - target_mode (string or null)
+            - ag_filter_model (valid AG Grid setFilterModel dictionary using 'number' or 'text' filterType)
+            - column_state (array of objects with colId, pinned ('left'|null), sort ('asc'|'desc'|null))
+            - spotlight_tx_id (string e.g. 'REC-99420-FLAGSHIP' if anomaly/5000/flagship mentioned, else null)
+            """
+            resp = model.generate_content(
+                f"{system_prompt}\nUser Query: {q_raw}",
+                generation_config={"response_mime_type": "application/json"}
+            )
+            parsed = json.loads(resp.text)
+            safe_filters = {k: v for k, v in parsed.get("ag_filter_model", {}).items() if k in ALLOWLISTED_COLUMNS}
+            return NLGridCommandResponse(
+                intent_summary=parsed.get("intent_summary", "AI AST Compiled"),
+                spoken_reply=parsed.get("spoken_reply", "Grid updated with validated financial filters."),
+                target_mode=parsed.get("target_mode"),
+                ag_filter_model=safe_filters,
+                column_state=parsed.get("column_state", []),
+                spotlight_tx_id=parsed.get("spotlight_tx_id"),
+                ast_security_seal="GEMINI-2.5-FLASH-SCHEMA-LOCKED (SQL/JS Injection Blocked)"
+            )
+        except Exception as e:
+            logger.warning(f"[AURA AST Fallback Triggered]: {e}")
+
+    # 2. Zero-Latency Deterministic NLP Compiler (Works 100% offline/without keys)
+    filter_model: Dict[str, Any] = {}
+    col_state: List[Dict[str, Any]] = []
+    target_mode = None
+    spotlight_id = None
+    spoken = "Applied validated filter to the AG Grid workbench."
+
+    num_match = re.search(r"(?:above|over|greater than|more than|>|\$)\s*([\d,]+)", q)
+    extracted_amount = float(num_match.group(1).replace(",", "")) if num_match else None
+
+    if "reset" in q or "clear" in q or "all transaction" in q or "show all" in q:
+        spoken = "Cleared all active filters. Restored full twenty-four transaction ledger."
+        target_mode = "TRANSACTIONS"
+    else:
+        if any(w in q for w in ["mismatch", "discrepancy", "differ", "variance", "delta", "gap", "unreconciled", "5000", "5,000"]):
+            filter_model["delta"] = {"filterType": "number", "type": "lessThan", "filter": 0}
+            col_state.append({"colId": "delta", "pinned": "left", "sort": "asc"})
+            target_mode = "RECONCILIATION"
+            spotlight_id = "REC-99420-FLAGSHIP"
+            spoken = "Isolated three-way ledger mismatches. Pinned five thousand dollar variance on Nexus Cloud."
+
+        elif any(w in q for w in ["low risk", "low-risk", "clean", "safe", "verified clean"]):
+            threshold = 30
+            filter_model["riskScore"] = {"filterType": "number", "type": "lessThan", "filter": threshold}
+            col_state.append({"colId": "riskScore", "pinned": "left", "sort": "asc"})
+            target_mode = "TRANSACTIONS"
+            spoken = f"Filtered verified low-risk transactions with anomaly scores below {threshold} and clean reconciliation."
+
+        elif any(w in q for w in ["high risk", "high-risk", "risk", "critical", "anomaly", "fraud", "suspicious"]):
+            threshold = 70
+            filter_model["riskScore"] = {"filterType": "number", "type": "greaterThanOrEqual", "filter": threshold}
+            col_state.append({"colId": "riskScore", "pinned": "left", "sort": "desc"})
+            target_mode = "RISK_INTELLIGENCE"
+            spoken = f"Filtered for critical anomaly risk scores above {threshold} and sorted descending."
+
+        elif any(w in q for w in ["dispute", "chargeback"]):
+            target_mode = "DISPUTES"
+            filter_model["txId"] = {"filterType": "text", "type": "contains", "filter": "DISPUTE"}
+            spoken = "Switched to Disputes view. Isolated open PayPal buyer claims pending cryptographic evidence."
+
+        elif any(w in q for w in ["refund", "return"]):
+            target_mode = "REFUNDS"
+            filter_model["txId"] = {"filterType": "text", "type": "contains", "filter": "REFUND"}
+            spoken = "Filtered pending refunds and verified credit recovery items."
+
+        elif any(w in q for w in ["gpu", "unwind", "11", "bounty", "micro"]):
+            target_mode = "TRANSACTIONS"
+            spoken = "Displaying autonomous micro-GPU bounty disbursements verified under Tier 1 policy."
+
+        elif any(w in q for w in ["escrow", "wholesale", "large"]):
+            target_mode = "TRANSACTIONS"
+            filter_model["paypalAmount"] = {"filterType": "number", "type": "greaterThanOrEqual", "filter": 10000}
+            spoken = "Isolated high-value enterprise escrow accounts exceeding ten thousand dollars."
+
+        if extracted_amount is not None and "5000" not in str(int(extracted_amount)):
+            filter_model["paypalAmount"] = {"filterType": "number", "type": "greaterThan", "filter": extracted_amount}
+            spoken += f" Showing PayPal captures exceeding {int(extracted_amount)} dollars."
+
+    return NLGridCommandResponse(
+        intent_summary=f"AST Compiled: {len(filter_model)} filters, {len(col_state)} column mutations",
+        spoken_reply=spoken,
+        target_mode=target_mode,
+        ag_filter_model=filter_model,
+        column_state=col_state,
+        spotlight_tx_id=spotlight_id,
+        ast_security_seal="ALLOWLISTED-AST-VERIFIED (Arbitrary SQL/JS Execution Blocked)"
+    )
+
