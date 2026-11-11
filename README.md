@@ -214,31 +214,51 @@ The following live captures from **[https://aion-fintech-network.vercel.app](htt
 ![AURA Voice AI Command Bar in Action](docs/evidence/aura-voice-command-bar-active.jpg)
 
 ### 3. 🛡️ Out-of-Band CFO Cryptographic Email & Live Inbox Drawer
-> Zero-cost executive defense: Out-of-band email dispatch featuring rendered HTML audit receipt, `PayPal-Debug-Id`, SHA-256 warrant hash, and 6-digit air-gapped OTP code (`XXX-XXX`) alongside the 7-Step Investigation Replay timeline:
+> Zero-cost executive defense: Out-of-band email dispatch featuring rendered HTML audit receipt to `judge@paypal.com`, `PayPal-Debug-Id`, SHA-256 warrant hash, and 6-digit air-gapped OTP code (`609-994`) alongside the 1-Click Auto-Verify & Settle action:
 
-![AURA Out-of-Band CFO Email Drawer and OTP](docs/evidence/aura-cfo-email-otp-drawer.png)
+![AURA Out-of-Band CFO Email Drawer and OTP](docs/evidence/aura-cfo-inbox-preview-drawer-otp.jpg)
 
-### 4. 🛑 Deterministic Veto Gate — Rogue AI 403 Quarantine Lab
+### 4. 🧾 PayPal Verified Settlement Receipt ($5,000.00 USD Resolved)
+> Official settlement receipt confirming resolution of flagship discrepancy `REC-99420-FLAGSHIP`, displaying Capture ID `PP-SANDBOX-CAPTURE-884944`, authentic `PayPal-Debug-Id` (`ca5862aa1577`), `VERIFIED (0% Double-Spend)` idempotency lock, and cryptographic warrant seal:
+
+![AURA PayPal Verified Settlement Receipt](docs/evidence/aura-paypal-verified-settlement-receipt.jpg)
+
+### 5. 📞 Free Web-Audio AI CFO Emergency Telephone Call
+> Zero-cost dual-tone (440Hz + 480Hz) phone siren alert triggered upon rogue transfer detection, displaying the pulsing emergency caller modal with executive officer voice synthesis:
+
+![AURA Incoming AI CFO Emergency Security Call](docs/evidence/aura-incoming-cfo-security-call-modal.jpg)
+
+### 6. 🛑 Deterministic Veto Gate — Rogue AI 403 Quarantine Lab
 > Unhappy path defense: When an autonomous agent attempts an unauthorized transfer ($50,000.00), AION issues an immediate deterministic veto (**$0.00 funds moved**), increments the Fraud Prevention Counter, and plays a Web Audio dual-tone telephone alert:
 
 ![AURA Unhappy Path Rogue AI 403 Veto Interception](docs/evidence/aura-unhappy-path-403-veto.jpg)
 
-### 5. 🤖 Best Use of Agentic Commerce ($5,000 Track) — 3-Way Adversarial Courtroom
+### 7. 🤖 Best Use of Agentic Commerce ($5,000 Track) — 3-Way Adversarial Courtroom
 > Multi-agent checks and balances in FORGEX: Procurement Agent verifies 14/14 automated tests, CFO FinOps Agent enforces treasury caps, and UNWIND Auditor seals a commit-bound SHA-256 warrant before initiating PayPal Payouts v1:
 
 ![FORGEX Multi-Agent Adversarial Courtroom](docs/evidence/forgex-multi-agent-adversarial-courtroom.png)
 
-### 6. 🔒 UNWIND Cryptographic Warrant Inspection Modal
+### 8. 🚀 Autonomous Proof-Carrying Pull Request (PCPR) Delivery
+> Automated codebase repair and GitHub Pull Request delivery (`newfile.py`), sealed with SHA-256 manifest hash, verified by NVIDIA Nemotron-4-340B, and authorized by UNWIND Governance:
+
+![FORGEX Proof-Carrying PR Evidence Package](docs/evidence/forgex-proof-carrying-pr-evidence-package.jpg)
+
+### 9. ⚙️ 12-Stage Autonomous Verification Pipeline (100% Green Tests)
+> Verifiable 12-stage engineering pipeline executing Python unit tests (`EXIT CODE 0`), DevGuard static security scans, and cryptographic manifest anchoring:
+
+![FORGEX 12-Stage Verification Pipeline](docs/evidence/forgex-12-stage-verification-pipeline-green.jpg)
+
+### 10. 🔒 UNWIND Cryptographic Warrant Inspection Modal
 > Commit-bound audit proof: Every payout is permanently anchored to a Git commit hash milestone boundary, verified automated test suite, and immutable dual-control governance approval:
 
 ![FORGEX UNWIND Cryptographic Warrant Inspection](docs/evidence/forgex-unwind-warrant-cryptographic-proof.png)
 
-### 7. 📈 Verifiable AG Grid Transaction Evidence Ledger
+### 11. 📈 Verifiable AG Grid Transaction Evidence Ledger
 > High-performance AG Grid ledger logging settled volume ($14,460.74 USD), 100% cryptographic proof rate, 182ms FastAPI latency, with 1-click JSON export and WhatsApp payment nudges:
 
 ![FORGEX Verifiable AG Grid Evidence Ledger](docs/evidence/forgex-verifiable-ag-grid-evidence-ledger.png)
 
-### 8. 🎫 Official PayPal Payouts Settlement Ticket
+### 12. 🎫 Official PayPal Payouts Settlement Ticket
 > Verifiable sandbox payout disbursement receipt displaying settled amount ($45.00 USD), authentic batch ID (`PP-BATCH-H59HBC`), and SHA-256 cryptographic warrant proof:
 
 ![FORGEX PayPal Official Settlement Ticket](docs/evidence/forgex-paypal-transaction-ticket-settled.jpg)
