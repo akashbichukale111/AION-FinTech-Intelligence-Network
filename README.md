@@ -208,7 +208,12 @@ The following live captures from **[https://aion-fintech-network.vercel.app](htt
 
 ![AURA AG Grid 60FPS Engine with Inline SVG Sparklines](docs/evidence/aura-ag-grid-svg-sparklines.jpg)
 
-### 2. 🧠 Best Use of PayPal + AI ($5,000 Track) — Voice-to-AST Command Bar & Speech Synthesis
+### 2. 🤖 AG Agent Framework — AURA AI Copilot & Data Agent
+> Deep AG Grid interrogation: Autonomous Data Agent analyzing customer volume, settlement velocity, and contract discrepancy breaks across PayPal Sandbox records with 1-click executive prompt starters:
+
+![AURA AG Agent Framework AI Copilot and Data Agent](docs/evidence/aura-ag-agent-framework-copilot.png)
+
+### 3. 🧠 Best Use of PayPal + AI ($5,000 Track) — Voice-to-AST Command Bar & Speech Synthesis
 > Browser Web Speech API capturing spoken commands (*"show mismatches"*), compiled via Gemini 2.5 Flash into strict JSON AST models that mutate AG Grid filter state in <1 second with synthesized executive voice reply:
 
 ![AURA Voice AI Command Bar in Action](docs/evidence/aura-voice-command-bar-active.jpg)
