@@ -17,6 +17,7 @@ import {
 import { Badge } from "../components/ui";
 import { EcosystemVisual } from "../components/Visual";
 import { PayPalPanel } from "../components/PayPalPanel";
+import CinematicPresentationPlayer from "../components/CinematicPresentationPlayer";
 
 const KEY_METRICS = [
   { val: "$68,410.50", unit: "USD", label: "Live Volume Processed", sub: "PayPal Orders v2 & Payouts v1", tone: "#22d3ee" },
@@ -813,8 +814,12 @@ function JudgesBenchmarkModal({ onClose }: JudgesBenchmarkModalProps) {
 
 export default function HomePage() {
   const [isBenchmarkOpen, setIsBenchmarkOpen] = useState(false);
+  const [isDemoPlayerOpen, setIsDemoPlayerOpen] = useState(false);
   return (
     <>
+      {/* Self-Driving Demo Presentation Player */}
+      <CinematicPresentationPlayer isOpen={isDemoPlayerOpen} onClose={() => setIsDemoPlayerOpen(false)} />
+
       {/* Hero Section */}
       <section className="hero wrap" style={{ paddingTop: "40px", paddingBottom: "30px" }}>
         <div className="hero-copy">
@@ -832,6 +837,28 @@ export default function HomePage() {
           </p>
 
           <div className="row" style={{ marginTop: "24px", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setIsDemoPlayerOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 24px",
+                fontSize: "14px",
+                fontWeight: 800,
+                color: "#ffffff",
+                backgroundColor: "#dc2626",
+                border: "1px solid rgba(239, 68, 68, 0.6)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                boxShadow: "0 0 25px rgba(220, 38, 38, 0.5)",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ffffff" }}></span>
+              🎬 Play 3-Min Hackathon Demo (Self-Driving)
+            </button>
+
             <Link
               className="btn btn-primary"
               to="/aura"
@@ -845,7 +872,7 @@ export default function HomePage() {
                 boxShadow: "0 0 20px rgba(56, 189, 248, 0.4)"
               }}
             >
-              <Zap size={16} /> Open AURA Financial Workbench (AG Grid) <ArrowRight size={16} />
+              <Zap size={16} /> Open AURA (AG Grid) <ArrowRight size={16} />
             </Link>
 
             <Link
@@ -861,7 +888,7 @@ export default function HomePage() {
                 boxShadow: "0 0 20px rgba(139, 92, 246, 0.35)"
               }}
             >
-              <Bot size={16} /> Open FORGEX Autonomous Studio <ArrowRight size={16} />
+              <Bot size={16} /> Open FORGEX (Commerce) <ArrowRight size={16} />
             </Link>
 
             <button
@@ -870,8 +897,8 @@ export default function HomePage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                padding: "12px 22px",
-                fontSize: "14px",
+                padding: "12px 20px",
+                fontSize: "13px",
                 fontWeight: 700,
                 color: "#facc15",
                 backgroundColor: "rgba(234, 179, 8, 0.12)",
@@ -882,7 +909,7 @@ export default function HomePage() {
                 transition: "all 0.2s ease"
               }}
             >
-              <Sparkles size={16} color="#facc15" /> ⚡ 1-Click Judges Benchmark (3s)
+              <Sparkles size={15} color="#facc15" /> ⚡ 1-Click Benchmark (3s)
             </button>
           </div>
 
