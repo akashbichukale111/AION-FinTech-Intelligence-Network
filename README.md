@@ -199,7 +199,53 @@ To satisfy the highest standards of PayPal Senior Engineering judges:
 
 ---
 
-## 📸 Live PayPal Sandbox & Production Telemetry (Verified Proof)
+## 📸 Live Platform Architecture & Judge Proof Gallery (AURA & FORGEX)
+
+The following live captures from **[https://aion-fintech-network.vercel.app](https://aion-fintech-network.vercel.app)** demonstrate the end-to-end execution of our targeted prize tracks:
+
+### 1. 📊 Best Use of AG Grid ($5,000 Track) — 60 FPS Dynamic Engine & Inline SVG Sparklines
+> Native AG Grid Community v31 running in dark institutional FinTech theme with dynamic column morphing, the -$5,000.00 Delta column pinned, inline zero-dependency SVG sparklines visualizing 3-way drift, and real-time transaction state:
+
+![AURA AG Grid 60FPS Engine with Inline SVG Sparklines](docs/evidence/aura-ag-grid-svg-sparklines.jpg)
+
+### 2. 🧠 Best Use of PayPal + AI ($5,000 Track) — Voice-to-AST Command Bar & Speech Synthesis
+> Browser Web Speech API capturing spoken commands (*"show mismatches"*), compiled via Gemini 2.5 Flash into strict JSON AST models that mutate AG Grid filter state in <1 second with synthesized executive voice reply:
+
+![AURA Voice AI Command Bar in Action](docs/evidence/aura-voice-command-bar-active.jpg)
+
+### 3. 🛡️ Out-of-Band CFO Cryptographic Email & Live Inbox Drawer
+> Zero-cost executive defense: Out-of-band email dispatch featuring rendered HTML audit receipt, `PayPal-Debug-Id`, SHA-256 warrant hash, and 6-digit air-gapped OTP code (`XXX-XXX`) alongside the 7-Step Investigation Replay timeline:
+
+![AURA Out-of-Band CFO Email Drawer and OTP](docs/evidence/aura-cfo-email-otp-drawer.png)
+
+### 4. 🛑 Deterministic Veto Gate — Rogue AI 403 Quarantine Lab
+> Unhappy path defense: When an autonomous agent attempts an unauthorized transfer ($50,000.00), AION issues an immediate deterministic veto (**$0.00 funds moved**), increments the Fraud Prevention Counter, and plays a Web Audio dual-tone telephone alert:
+
+![AURA Unhappy Path Rogue AI 403 Veto Interception](docs/evidence/aura-unhappy-path-403-veto.jpg)
+
+### 5. 🤖 Best Use of Agentic Commerce ($5,000 Track) — 3-Way Adversarial Courtroom
+> Multi-agent checks and balances in FORGEX: Procurement Agent verifies 14/14 automated tests, CFO FinOps Agent enforces treasury caps, and UNWIND Auditor seals a commit-bound SHA-256 warrant before initiating PayPal Payouts v1:
+
+![FORGEX Multi-Agent Adversarial Courtroom](docs/evidence/forgex-multi-agent-adversarial-courtroom.png)
+
+### 6. 🔒 UNWIND Cryptographic Warrant Inspection Modal
+> Commit-bound audit proof: Every payout is permanently anchored to a Git commit hash milestone boundary, verified automated test suite, and immutable dual-control governance approval:
+
+![FORGEX UNWIND Cryptographic Warrant Inspection](docs/evidence/forgex-unwind-warrant-cryptographic-proof.png)
+
+### 7. 📈 Verifiable AG Grid Transaction Evidence Ledger
+> High-performance AG Grid ledger logging settled volume ($14,460.74 USD), 100% cryptographic proof rate, 182ms FastAPI latency, with 1-click JSON export and WhatsApp payment nudges:
+
+![FORGEX Verifiable AG Grid Evidence Ledger](docs/evidence/forgex-verifiable-ag-grid-evidence-ledger.png)
+
+### 8. 🎫 Official PayPal Payouts Settlement Ticket
+> Verifiable sandbox payout disbursement receipt displaying settled amount ($45.00 USD), authentic batch ID (`PP-BATCH-H59HBC`), and SHA-256 cryptographic warrant proof:
+
+![FORGEX PayPal Official Settlement Ticket](docs/evidence/forgex-paypal-transaction-ticket-settled.jpg)
+
+---
+
+## 📸 Live PayPal Sandbox & Production Telemetry (Developer Portal Evidence)
 
 To verify authentic, live integration with PayPal's REST APIs, the following captures from the active PayPal Developer Portal confirm live transaction execution, order captures, and security telemetry:
 
@@ -227,25 +273,6 @@ To verify authentic, live integration with PayPal's REST APIs, the following cap
 > Bi-directional email notification telemetry confirming real-time dispatches for payments received and buyer receipts:
 
 ![PayPal Notifications](docs/evidence/paypal-sandbox-email-notifications.jpg)
-
----
-
-## 📸 Recommended Screenshots for Devpost & Submission Gallery
-
-For the official hackathon submission package on Devpost, submit the following high-impact views:
-
-1. **AURA AG Grid Command Workbench (`/aura`):**
-   - Display the filtered 60FPS grid isolating transaction `REC-99420-FLAGSHIP` with the Delta column pinned left, the custom SVG sparkline, and the pinned bottom invariant row.
-2. **Voice AI Command Bar in Action:**
-   - Show the microphone active with the speech query *"show mismatches"*, the green AST confirmation badge, and the voice synthesizer wave.
-3. **Out-of-Band CFO Cryptographic Email & Live Inbox Drawer:**
-   - Show the slide-in drawer on the right containing the rendered audit receipt, `PayPal-Debug-Id`, SHA-256 warrant hash, and the 6-digit air-gapped OTP code (`XXX-XXX`).
-4. **Zero-Cost AI CFO Emergency Telephone Call:**
-   - Capture the pulsing emergency alert modal with the green `[📞 Answer AI CFO Emergency Call]` button and dual-tone siren indicator.
-5. **PayPal Sandbox Developer Portal (Embedded Evidence Above):**
-   - Direct evidence of active PayPal Orders v2 and Payouts v1 event logs with authentic debug IDs.
-6. **FORGEX Multi-Agent Courtroom & Rogue AI 403 Quarantine:**
-   - Show the 3-Way Adversarial Courtroom verifying test results and the deterministic 403 veto blocking an unauthorized $5,000 transfer with the live Fraud Prevention Counter ($19,250+ Protected).
 
 ---
 
