@@ -1,0 +1,10 @@
+node_modules
+.venv
+__pycache__
+*.pyc
+.git
+.next
+dist
+aura_platform/frontend/node_modules
+forgex/AEGISNOVA/node_modules
+AION-Main-Platform/node_modules
