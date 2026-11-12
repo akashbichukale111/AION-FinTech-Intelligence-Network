@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Mic, MicOff, Volume2, VolumeX, Search, Zap, CheckCircle2 } from "lucide-react";
 import { Badge } from "../components/ui";
 import AuraUnifiedCommandWorkbench from "../components/AuraUnifiedCommandWorkbench";
+import ForgexUnifiedCommandStudio from "../components/ForgexUnifiedCommandStudio";
 import { paypalAudio } from "../utils/paypalAudio";
 
 interface Check { label: string; value: string; ok: boolean }
@@ -225,7 +226,7 @@ export function AuraEntryPage() {
 
 export function ForgexEntryPage() {
   const baseUrl = (import.meta.env.VITE_FORGEX_URL as string | undefined) || "http://localhost:3000";
-  const [selectedView, setSelectedView] = useState<"paypal" | "studio">("paypal");
+  const [selectedView, setSelectedView] = useState<"unified" | "paypal" | "studio">("unified");
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Voice AI & Autonomous Prompt State for FORGEX
@@ -366,11 +367,12 @@ export function ForgexEntryPage() {
   const extraParams = searchStr ? `&${searchStr.replace(/^\?/, "")}` : "";
 
   const viewUrls = {
+    unified: "",
     paypal: `${baseUrl}/engineering?tab=paypal${extraParams}`,
     studio: `${baseUrl}/studio`
   };
 
-  const handleSelectView = (view: "paypal" | "studio") => {
+  const handleSelectView = (view: "unified" | "paypal" | "studio") => {
     setSelectedView(view);
     if (view === "paypal") {
       try {
@@ -379,7 +381,7 @@ export function ForgexEntryPage() {
     }
   };
 
-  const currentIframeUrl = viewUrls[selectedView];
+  const currentIframeUrl = viewUrls[selectedView] || viewUrls.paypal;
 
   return (
     <div style={{ width: "100%", height: "calc(100vh - 60px)", display: "flex", flexDirection: "column", backgroundColor: "#070A12", overflow: "hidden", position: "relative" }}>
@@ -452,6 +454,27 @@ export function ForgexEntryPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
             type="button"
+            onClick={() => handleSelectView("unified")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              backgroundColor: selectedView === "unified" ? "rgba(139, 92, 246, 0.25)" : "rgba(139, 92, 246, 0.1)",
+              border: selectedView === "unified" ? "1.5px solid #a78bfa" : "1px solid rgba(139, 92, 246, 0.35)",
+              borderRadius: "6px",
+              color: "#c4b5fd",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: selectedView === "unified" ? "0 0 12px rgba(139, 92, 246, 0.4)" : "none",
+              transition: "all 0.2s"
+            }}
+          >
+            ⚡ Autonomous Studio (Cloud Live)
+          </button>
+          <button
+            type="button"
             onClick={() => handleSelectView("paypal")}
             style={{
               display: "inline-flex",
@@ -469,7 +492,7 @@ export function ForgexEntryPage() {
               transition: "all 0.2s"
             }}
           >
-            💳 PayPal Agentic Commerce & Evidence Ledger (Live)
+            💳 Local Sandbox (Port 3000)
           </button>
           <button
             type="button"
@@ -648,20 +671,26 @@ export function ForgexEntryPage() {
         </div>
       </div>
 
-      {/* Full-Suite Live Embedded FORGEX Operating System */}
-      <iframe
-        ref={iframeRef}
-        src={currentIframeUrl}
-        title="FORGEX Autonomous Engineering & FinTech Reliability Platform"
-        allow="payment; camera; microphone; clipboard-read; clipboard-write; display-capture"
-        style={{
-          width: "100%",
-          height: "100%",
-          flex: 1,
-          border: "none",
-          backgroundColor: "#070A12"
-        }}
-      />
+      {/* Content: Unified Cloud Studio (Default - 100% Vercel Edge Live) or Embedded Localhost */}
+      {selectedView === "unified" ? (
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", backgroundColor: "#070A12" }}>
+          <ForgexUnifiedCommandStudio onTriggerSonicChime={() => paypalAudio.playChime(0.35)} />
+        </div>
+      ) : (
+        <iframe
+          ref={iframeRef}
+          src={currentIframeUrl}
+          title="FORGEX Autonomous Engineering & FinTech Reliability Platform"
+          allow="payment; camera; microphone; clipboard-read; clipboard-write; display-capture"
+          style={{
+            width: "100%",
+            height: "100%",
+            flex: 1,
+            border: "none",
+            backgroundColor: "#070A12"
+          }}
+        />
+      )}
     </div>
   );
 }

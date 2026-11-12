@@ -17,7 +17,6 @@ import {
 import { Badge } from "../components/ui";
 import { EcosystemVisual } from "../components/Visual";
 import { PayPalPanel } from "../components/PayPalPanel";
-import CinematicPresentationPlayer from "../components/CinematicPresentationPlayer";
 
 const KEY_METRICS = [
   { val: "$68,410.50", unit: "USD", label: "Live Volume Processed", sub: "PayPal Orders v2 & Payouts v1", tone: "#22d3ee" },
@@ -814,12 +813,8 @@ function JudgesBenchmarkModal({ onClose }: JudgesBenchmarkModalProps) {
 
 export default function HomePage() {
   const [isBenchmarkOpen, setIsBenchmarkOpen] = useState(false);
-  const [isDemoPlayerOpen, setIsDemoPlayerOpen] = useState(false);
   return (
     <>
-      {/* Self-Driving Demo Presentation Player */}
-      <CinematicPresentationPlayer isOpen={isDemoPlayerOpen} onClose={() => setIsDemoPlayerOpen(false)} />
-
       {/* Hero Section */}
       <section className="hero wrap" style={{ paddingTop: "40px", paddingBottom: "30px" }}>
         <div className="hero-copy">
@@ -936,50 +931,6 @@ export default function HomePage() {
 
       {/* System Architecture */}
       <Architecture />
-
-      {/* Very Bottom Section: Self-Driving Demo Presentation */}
-      <section className="wrap" style={{ padding: "40px 0 60px 0", textAlign: "center" }}>
-        <div style={{
-          backgroundColor: "#0d1424",
-          border: "1px solid rgba(239, 68, 68, 0.4)",
-          borderRadius: "12px",
-          padding: "32px 24px",
-          maxWidth: "780px",
-          margin: "0 auto",
-          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.6)"
-        }}>
-          <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1.5px", color: "#f87171", textTransform: "uppercase" }}>
-            HACKATHON SUBMISSION DEMO
-          </span>
-          <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#f8fafc", margin: "8px 0 12px 0" }}>
-            Watch the Full End-to-End Self-Driving Video Presentation
-          </h3>
-          <p style={{ fontSize: "13px", color: "#94a3b8", maxWidth: "580px", margin: "0 auto 20px auto", lineHeight: "1.5" }}>
-            Automated 5-Act cinematic walkthrough showcasing Rogue AI 403 quarantine, AURA AG Grid 60FPS reconciliation, and FORGEX PayPal agentic payouts.
-          </p>
-          <button
-            onClick={() => setIsDemoPlayerOpen(true)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px 28px",
-              fontSize: "14px",
-              fontWeight: 800,
-              color: "#ffffff",
-              backgroundColor: "#dc2626",
-              border: "1px solid rgba(239, 68, 68, 0.6)",
-              borderRadius: "8px",
-              cursor: "pointer",
-              boxShadow: "0 0 25px rgba(220, 38, 38, 0.5)",
-              transition: "all 0.2s ease"
-            }}
-          >
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ffffff" }}></span>
-            🎬 Play 3-Min Hackathon Demo (Self-Driving)
-          </button>
-        </div>
-      </section>
 
       {/* 1-Click Interactive Benchmark Modal */}
       {isBenchmarkOpen && <JudgesBenchmarkModal onClose={() => setIsBenchmarkOpen(false)} />}
